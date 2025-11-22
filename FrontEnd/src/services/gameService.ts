@@ -115,7 +115,8 @@ class GameService {
         secret_concept: secretConcept,
         context: context,
         topic: topic,
-        time_limit: timeLimit
+        time_limit: timeLimit,
+        start_time: new Date().toISOString()
       } as StartLobbyRequest),
     });
 

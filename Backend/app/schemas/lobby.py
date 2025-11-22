@@ -82,6 +82,7 @@ class LobbyStart(BaseModel):
     context: Optional[str] = Field(None, description="Optional update to additional context")
     topic: Optional[str] = Field(None, description="Optional update to topic/description")
     time_limit: Optional[int] = Field(None, description="Optional update to time limit in seconds")
+    start_time: Optional[str] = Field(None, description="Optional start time provided by host")
 
 
 class LobbyStartResponse(BaseModel):
@@ -95,6 +96,20 @@ class LobbyDeleteResponse(BaseModel):
     """Schema for lobby deletion response."""
     pin: str
     message: str = Field(..., description="Confirmation message")
+
+
+class LeaderboardEntry(BaseModel):
+    """Schema for a single leaderboard entry."""
+    user_id: str
+    name: str
+    question_count: int
+    guessed_correct: bool
+
+
+class LeaderboardResponse(BaseModel):
+    """Schema for leaderboard response."""
+    pin: str
+    leaderboard: List[LeaderboardEntry] = Field(..., description="Top 10 users sorted by question count")
 
 
 class LobbySession(BaseModel):
