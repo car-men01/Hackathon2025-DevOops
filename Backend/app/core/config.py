@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     # Gemini API - Loaded from .env file
     GOOGLE_API_KEY: str
-    GEMINI_MODEL: str = "gemini-2.5-flash"  # Using stable model with full path
+    GEMINI_MODEL: str = "gemini-2.5-flash-live"  # Using stable model with full path
 
     # LangChain
     LANGCHAIN_TRACING_V2: str = "false"
