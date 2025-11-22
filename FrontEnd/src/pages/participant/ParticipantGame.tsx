@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
-import type { Question } from '../../types';
 import { gameService } from '../../services/gameService';
 import './ParticipantGame.css';
 
 export const ParticipantGame: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, currentLobby, addQuestion, makeGuess } = useGame();
+  const { currentUser, currentLobby, addQuestion, updateLobby } = useGame();
   const [questionText, setQuestionText] = useState('');
   const [isAsking, setIsAsking] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(currentLobby?.timeLimit || 600);
@@ -85,9 +84,26 @@ export const ParticipantGame: React.FC = () => {
 
       // Check if the question contains the concept
       if (currentLobby.concept && questionText.toLowerCase().includes(currentLobby.concept.toLowerCase())) {
+        // Calculate time elapsed
+        const timeElapsed = (currentLobby.timeLimit || 600) - timeRemaining;
+        const questionsUsed = currentLobby.questions.filter(q => q.userId === currentUser.id).length + 1;
+        
+        // Update the current user with time elapsed and questions used
+        const updatedUsers = currentLobby.users.map(u => 
+          u.id === currentUser.id 
+            ? { ...u, timeElapsed, questionsUsed }
+            : u
+        );
+        
+        // Update lobby with winner info
+        updateLobby({
+          users: updatedUsers,
+          winner: { ...currentUser, timeElapsed, questionsUsed },
+          status: 'finished'
+        });
+
         // Show congratulations popup
-        const timeTaken = (currentLobby.timeLimit || 600) - timeRemaining;
-        alert(`🎉 Congratulations! You guessed the concept: "${currentLobby.concept}"\n\nYour time: ${formatTime(timeTaken)}`);
+        alert(`🎉 Congratulations! You guessed the concept: "${currentLobby.concept}"\n\nQuestions used: ${questionsUsed}\nTime taken: ${formatTime(timeElapsed)}`);
         navigate('/results');
         return;
       }

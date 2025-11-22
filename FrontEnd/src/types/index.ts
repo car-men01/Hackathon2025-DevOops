@@ -5,6 +5,8 @@ export interface User {
   name: string;
   role: UserRole;
   score: number;
+  questionsUsed?: number;
+  timeElapsed?: number;
 }
 
 export interface Question {
