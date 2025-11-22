@@ -19,6 +19,38 @@ export const ParticipantGame: React.FC = () => {
     }
   }, [currentUser, currentLobby, navigate]);
 
+  // Initial fetch of lobby info to get topic
+  useEffect(() => {
+    if (!currentUser || !currentLobby) return;
+
+    const fetchInitialLobbyInfo = async () => {
+      try {
+        const lobbyInfo = await gameService.getLobbyInfo(currentLobby.code, currentUser.id);
+        console.log('[ParticipantGame] Initial lobby info:', lobbyInfo);
+        
+        // Update participants and topic
+        const users = gameService.convertParticipantsToUsers(
+          lobbyInfo.participants,
+          lobbyInfo.host_name,
+          currentUser.id,
+          currentUser.name,
+          false
+        );
+
+        // Always update with the latest info from server
+        updateLobby({ 
+          users,
+          ...(lobbyInfo.topic && { topic: lobbyInfo.topic })
+        });
+      } catch (err) {
+        console.error('[ParticipantGame] Error fetching initial lobby info:', err);
+      }
+    };
+
+    fetchInitialLobbyInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
   useEffect(() => {
     // Countdown timer
     const timer = setInterval(() => {
@@ -51,7 +83,9 @@ export const ParticipantGame: React.FC = () => {
           false
         );
 
-        updateLobby({ users });
+        updateLobby({ 
+          users
+        });
       } catch (err) {
         console.error('Error polling lobby info:', err);
       }
@@ -146,7 +180,7 @@ export const ParticipantGame: React.FC = () => {
             <h1>Ask Jimmy</h1>
             <div className="participant-topic-display">
               <span className="participant-topic-label">Topic:</span>
-              <span className="participant-topic-value">{currentLobby.concept || 'Not set'}</span>
+              <span className="participant-topic-value">{currentLobby.topic || 'Not set'}</span>
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
-import { gameService } from '../../services/gameService';
+import { gameService } from '../../services';
 import { JimmyNarwhal } from '../../components/JimmyNarwhal';
 import type { LobbyType } from '../../types';
 import './HostSetup.css';
@@ -143,7 +143,14 @@ export const HostSetup: React.FC = () => {
       } else {
         // Lobby already exists, just start it
         console.log('[HostSetup] Lobby already exists, starting:', currentLobby.code);
-        await gameService.startLobby(currentLobby.code, currentUser.id);
+        await gameService.startLobby(
+          currentLobby.code, 
+          currentUser.id,
+          concept.trim(),
+          context.trim(),
+          topic.trim(),
+          parseInt(timeLimit) * 60
+        );
         console.log('[HostSetup] Lobby started successfully');
         
         updateLobby({ 

@@ -79,6 +79,10 @@ class LobbyStart(BaseModel):
     """Schema for starting the lobby."""
     pin: str = Field(..., description="7-digit PIN of the lobby")
     host_id: str = Field(..., description="Host's unique identifier for authentication")
+    secret_concept: Optional[str] = Field(None, description="Optional update to the secret word/concept")
+    context: Optional[str] = Field(None, description="Optional update to additional context")
+    topic: Optional[str] = Field(None, description="Optional update to topic/description")
+    time_limit: Optional[int] = Field(None, description="Optional update to time limit in seconds")
 
 
 class LobbyStartResponse(BaseModel):

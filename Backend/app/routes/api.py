@@ -128,6 +128,7 @@ async def start_lobby(lobby_start: LobbyStart):
     
     The host uses this endpoint to start the lobby after participants have joined.
     This creates a lobby with the Lobby Master AI.
+    Optionally updates concept, context, topic, and time_limit if provided.
     """
     try:
         logger.info(f"[START_LOBBY] Request received: pin={lobby_start.pin}, host_id={lobby_start.host_id}")
@@ -145,6 +146,23 @@ async def start_lobby(lobby_start: LobbyStart):
         if lobby.host.user_id != lobby_start.host_id:
             logger.error(f"[START_LOBBY] Host ID mismatch: expected={lobby.host.user_id}, received={lobby_start.host_id}")
             raise HTTPException(status_code=403, detail="Only the host can start the lobby")
+        
+        # Update lobby fields if provided
+        if lobby_start.secret_concept is not None:
+            lobby.secret_concept = lobby_start.secret_concept
+            logger.info(f"[START_LOBBY] Updated secret_concept: {lobby_start.secret_concept}")
+        
+        if lobby_start.context is not None:
+            lobby.context = lobby_start.context
+            logger.info(f"[START_LOBBY] Updated context: {lobby_start.context}")
+        
+        if lobby_start.topic is not None:
+            lobby.topic = lobby_start.topic
+            logger.info(f"[START_LOBBY] Updated topic: {lobby_start.topic}")
+        
+        if lobby_start.time_limit is not None:
+            lobby.timelimit = lobby_start.time_limit
+            logger.info(f"[START_LOBBY] Updated time_limit: {lobby_start.time_limit}")
         
         # Start lobby using Lobby method
         try:
