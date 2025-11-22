@@ -83,7 +83,7 @@ async def join_lobby(join_data: ParticipantJoin):
         if not lobby:
             raise HTTPException(status_code=404, detail="Lobby not found with that PIN")
         
-        if lobby.lobby_started:
+        if lobby.start_time:
             raise HTTPException(status_code=400, detail="Lobby has already started")
         
         # Create participant user
@@ -169,7 +169,7 @@ async def get_lobby_info(pin: str):
             participants=lobby.get_participant_names(),
             secret_concept=lobby.secret_concept,
             context=lobby.context,
-            lobby_started=lobby.lobby_started,
+            lobby_started=lobby.start_time,
             lobby_active=lobby.lobby_active
         )
     except HTTPException:
@@ -199,7 +199,7 @@ async def reconnect_user(reconnect_data: UserReconnect):
                 user_id=lobby.host.user_id,
                 user_name=lobby.host.name,
                 is_host=True,
-                lobby_started=lobby.lobby_started,
+                lobby_started=lobby.start_time,
                 participants=lobby.get_participant_names()
             )
         
@@ -211,7 +211,7 @@ async def reconnect_user(reconnect_data: UserReconnect):
                 user_id=participant.user_id,
                 user_name=participant.name,
                 is_host=False,
-                lobby_started=lobby.lobby_started,
+                lobby_started=lobby.start_time,
                 participants=lobby.get_participant_names()
             )
         

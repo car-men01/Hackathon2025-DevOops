@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, Dict
 import uuid
 import random
@@ -13,14 +14,15 @@ class Lobby:
         """Generate a 7-digit PIN for a lobby."""
         return ''.join(random.choices(string.digits, k=7))
     
-    def __init__(self, pin: str, host: User, secret_concept: str, context: Optional[str] = None):
+    def __init__(self, pin: str, host: User, timelimit: int, secret_concept: str, topic: str, context: Optional[str] = None):
         self.pin = pin
         self.host = host
         self.secret_concept = secret_concept
         self.context = context
+        self.topic = topic
+        self.timelimit = timelimit
         self.participants: Dict[str, User] = {}  # key: user_id, value: User object
-        self.lobby_started = False
-        self.lobby_active = False
+        self.start_time = datetime()
         self.session_id: Optional[str] = None
     
     def add_participant(self, participant: User) -> None:
@@ -43,10 +45,10 @@ class Lobby:
     
     def start(self, session_id: str) -> None:
         """Start the lobby."""
-        if self.lobby_started:
+        if self.start_time:
             raise ValueError("Lobby has already started")
         if len(self.participants) == 0:
             raise ValueError("Cannot start lobby without participants")
-        self.lobby_started = True
+        self.start_time = True
         self.lobby_active = True
         self.session_id = session_id
