@@ -155,8 +155,8 @@ export const HostGame: React.FC = () => {
                 <button onClick={handleLeaveLobby} className="end-game-button">
                   Leave Lobby
                 </button>
-                <button onClick={handleEndGame} className="end-game-button">
-                  End Game
+                <button onClick={handleEndGame} className="view-leaderboard-button">
+                  View Leaderboard
                 </button>
               </div>
             </div>

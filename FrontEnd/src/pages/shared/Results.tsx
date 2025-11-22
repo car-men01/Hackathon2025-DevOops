@@ -96,7 +96,7 @@ export const Results: React.FC = () => {
 
       <div className="results-container">
         <div className="results-header">
-          <h1>Game Over!</h1>
+          {!isTeacher && <h1>Game Over!</h1>}
           
           {/* Animated Narwhal */}
           <div className="narwhal-celebration">
@@ -107,7 +107,7 @@ export const Results: React.FC = () => {
             />
           </div>
 
-          {winner && (
+          {winner && !isTeacher && (
             <div className="winner-announcement">
               <h2>🎉 {winner.name} Won! 🎉</h2>
               <p className="winner-concept">The secret was: <strong>{currentLobby.concept}</strong></p>
@@ -119,7 +119,7 @@ export const Results: React.FC = () => {
           {isTeacher ? (
             /* Teacher View - All Students */
             <div className="teacher-results">
-              <h3>Final Results - All Students</h3>
+              <h3>All Students</h3>
               <div className="results-table">
                 <div className="results-table-header">
                   <span className="col-rank">Rank</span>
@@ -223,7 +223,7 @@ export const Results: React.FC = () => {
         </div>
 
         <div className="results-actions">
-          <button onClick={() => navigate('/')} className="primary-action-button">
+          <button onClick={() => navigate('/host-game')} className="primary-action-button">
             Back to Lobby
           </button>
           {isTeacher && (

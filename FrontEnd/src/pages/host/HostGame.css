@@ -160,6 +160,24 @@
   color: white;
 }
 
+.view-leaderboard-button {
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  padding: 14px 28px;
+  border: 2px solid #ffe100;
+  border-radius: 12px;
+  background: white;
+  color: #ffe100;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-leaderboard-button:hover {
+  background: #ffe100;
+  color: white;
+}
+
 /* Main Content */
 .host-content {
   display: grid;
