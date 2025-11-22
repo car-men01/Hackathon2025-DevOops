@@ -1,0 +1,149 @@
+.jimmy-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+
+.jimmy-image {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+/* Idle animation - gentle floating */
+.jimmy-idle .jimmy-image {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Waiting animation - leaning forward */
+.jimmy-waiting .jimmy-image {
+  animation: lean-forward 2s ease-in-out infinite;
+}
+
+/* Processing animation - spinning */
+.jimmy-processing .jimmy-image {
+  animation: spin 1.5s linear infinite;
+}
+
+/* Correct answer - jumping with bubbles */
+.jimmy-correct .jimmy-image {
+  animation: jump 0.6s ease-in-out;
+}
+
+/* Incorrect answer - sad wiggle */
+.jimmy-incorrect .jimmy-image {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+.jimmy-text {
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1E90FF;
+  margin: 0;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes lean-forward {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-5deg);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes jump {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-30px) scale(1.1);
+  }
+}
+
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+/* Bubbles */
+.bubbles-container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.bubble {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #00BFFF;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: bubble-rise 2s ease-in-out infinite;
+}
+
+.bubble-1 {
+  left: 20%;
+  animation-delay: 0s;
+  width: 8px;
+  height: 8px;
+}
+
+.bubble-2 {
+  left: 50%;
+  animation-delay: 0.3s;
+  width: 12px;
+  height: 12px;
+}
+
+.bubble-3 {
+  left: 70%;
+  animation-delay: 0.6s;
+  width: 6px;
+  height: 6px;
+}
+
+@keyframes bubble-rise {
+  0% {
+    transform: translateY(80px);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-40px);
+    opacity: 0;
+  }
+}

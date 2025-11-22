@@ -1,0 +1,148 @@
+.lobby-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #F0F8FF 0%, #E0F2FF 100%);
+  padding: 20px;
+}
+
+.lobby-container {
+  background: white;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 10px 40px rgba(30, 144, 255, 0.15);
+  max-width: 500px;
+  width: 100%;
+}
+
+.lobby-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.lobby-title {
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  color: #1E90FF;
+  margin: 0 0 8px 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.lobby-subtitle {
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  font-size: 18px;
+  color: #00BFFF;
+  margin: 0;
+  font-weight: 500;
+}
+
+.lobby-mascot {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.lobby-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lobby-input {
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  padding: 16px 20px;
+  border: 2px solid #E0F2FF;
+  border-radius: 16px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.lobby-input:focus {
+  border-color: #1E90FF;
+  box-shadow: 0 0 0 4px rgba(30, 144, 255, 0.1);
+}
+
+.lobby-input::placeholder {
+  color: #B0C4DE;
+}
+
+.role-selector {
+  display: flex;
+  gap: 12px;
+}
+
+.role-button {
+  flex: 1;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  padding: 14px;
+  border: 2px solid #E0F2FF;
+  border-radius: 16px;
+  background: white;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1E90FF;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.role-button:hover {
+  border-color: #1E90FF;
+  background: #F0F8FF;
+}
+
+.role-button.active {
+  background: #1E90FF;
+  color: white;
+  border-color: #1E90FF;
+}
+
+.lobby-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.primary-button {
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  padding: 16px;
+  border: none;
+  border-radius: 16px;
+  background: #1E90FF;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(30, 144, 255, 0.3);
+}
+
+.primary-button:hover {
+  background: #0066CC;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(30, 144, 255, 0.4);
+}
+
+.primary-button:active {
+  transform: translateY(0);
+}
+
+.secondary-button {
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  padding: 14px;
+  border: 2px solid #1E90FF;
+  border-radius: 16px;
+  background: white;
+  color: #1E90FF;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.secondary-button:hover {
+  background: #F0F8FF;
+}
