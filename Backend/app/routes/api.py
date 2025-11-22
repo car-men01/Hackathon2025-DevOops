@@ -15,7 +15,7 @@ from app.schemas.lobby import (
     UserReconnectResponse
 )
 from app.services.GeminiAgent import GeminiAgent
-from app.services.GameMasterAgent import GameMasterAgent
+from app.services.GameMasterAgent import game_master
 from app.models.lobby import Lobby
 from app.models.user import User
 import uuid
@@ -39,33 +39,44 @@ async def create_lobby(lobby_data: LobbyCreate):
     Returns a 7-digit PIN that participants can use to join.
     """
     try:
+        logger.info(f"[CREATE_LOBBY] Request received: host_name={lobby_data.host_name}, secret_concept={lobby_data.secret_concept}, context={lobby_data.context}, topic={lobby_data.topic}, time_limit={lobby_data.time_limit}")
+        
         # Generate unique PIN
         pin = Lobby.generate_pin()
         while pin in lobbies:
             pin = Lobby.generate_pin()
         
+        logger.info(f"[CREATE_LOBBY] Generated PIN: {pin}")
+        
         # Create host user
         host = User(name=lobby_data.host_name)
+        logger.info(f"[CREATE_LOBBY] Created host user: user_id={host.user_id}, name={host.name}")
         
         # Create lobby instance with unique PIN, host, and concept
         lobby = Lobby(
             pin=pin,
             host=host,
             secret_concept=lobby_data.secret_concept,
-            context=lobby_data.context
+            context=lobby_data.context,
+            topic=lobby_data.topic,
+            timelimit=lobby_data.time_limit
         )
         
         lobbies[lobby.pin] = lobby
         
-        logger.info(f"Lobby created with PIN {lobby.pin} by host {host.name}")
+        logger.info(f"[CREATE_LOBBY] Lobby created with PIN {lobby.pin} by host {host.name}, topic={lobby.topic}, timelimit={lobby.timelimit}")
+        logger.info(f"[CREATE_LOBBY] Total lobbies in memory: {len(lobbies)}")
         
-        return LobbyCreateResponse(
+        response = LobbyCreateResponse(
             pin=lobby.pin,
             host_id=host.user_id,
             host_name=host.name
         )
+        logger.info(f"[CREATE_LOBBY] Returning response: {response}")
+        
+        return response
     except Exception as e:
-        logger.error(f"Error creating lobby: {str(e)}")
+        logger.error(f"[CREATE_LOBBY] Error creating lobby: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -119,28 +130,39 @@ async def start_lobby(lobby_start: LobbyStart):
     This creates a lobby with the Lobby Master AI.
     """
     try:
+        logger.info(f"[START_LOBBY] Request received: pin={lobby_start.pin}, host_id={lobby_start.host_id}")
+        logger.info(f"[START_LOBBY] Available lobbies: {list(lobbies.keys())}")
+        
         lobby = lobbies.get(lobby_start.pin)
         
         if not lobby:
+            logger.error(f"[START_LOBBY] Lobby not found: {lobby_start.pin}")
             raise HTTPException(status_code=404, detail="Lobby not found with that PIN")
+        
+        logger.info(f"[START_LOBBY] Lobby found: pin={lobby.pin}, host_user_id={lobby.host.user_id}")
         
         # Verify host_id
         if lobby.host.user_id != lobby_start.host_id:
+            logger.error(f"[START_LOBBY] Host ID mismatch: expected={lobby.host.user_id}, received={lobby_start.host_id}")
             raise HTTPException(status_code=403, detail="Only the host can start the lobby")
         
         # Start lobby using Lobby method
         try:
             lobby.start()
+            logger.info(f"[START_LOBBY] Lobby started successfully: {lobby_start.pin}")
         except ValueError as e:
+            logger.error(f"[START_LOBBY] Error starting lobby: {str(e)}")
             raise HTTPException(status_code=400, detail=str(e))
         
-        logger.info(f"Lobby started {lobby_start.pin}")
+        logger.info(f"[START_LOBBY] Lobby started {lobby_start.pin}")
         
-        return LobbyStartResponse(
+        response = LobbyStartResponse(
             pin=lobby.pin,
-            lobby_started=True,
+            start_time=lobby.start_time.isoformat(),
             participants=lobby.get_participant_names()
         )
+        logger.info(f"[START_LOBBY] Returning response: {response}")
+        return response
     except HTTPException:
         raise
     except Exception as e:
@@ -152,23 +174,32 @@ async def start_lobby(lobby_start: LobbyStart):
 async def get_lobby_info(pin: str, user_id: str):
     """Get information about a lobby using its PIN. Secret concept and context only visible to host."""
     try:
+        logger.info(f"[GET_LOBBY_INFO] Request received: pin={pin}, user_id={user_id}")
+        logger.info(f"[GET_LOBBY_INFO] Available lobbies: {list(lobbies.keys())}")
+        
         lobby = lobbies.get(pin)
         
         if not lobby:
+            logger.error(f"[GET_LOBBY_INFO] Lobby not found: {pin}")
             raise HTTPException(status_code=404, detail="Lobby not found")
+        
+        logger.info(f"[GET_LOBBY_INFO] Lobby found: pin={lobby.pin}, host={lobby.host.name}, participants={lobby.get_participant_names()}")
         
         # Check if the requesting user is the host
         is_host = lobby.host.user_id == user_id
+        logger.info(f"[GET_LOBBY_INFO] User is host: {is_host}")
         
-        return LobbyInfo(
+        response = LobbyInfo(
             pin=lobby.pin,
             host_name=lobby.host.name,
             participants=lobby.get_participant_names(),
             secret_concept=lobby.secret_concept if is_host else None,
             context=lobby.context if is_host else None,
-            lobby_started=lobby.lobby_started,
-            lobby_active=lobby.start_time
+            start_time=lobby.start_time.isoformat() if lobby.start_time else None,
+            timelimit=lobby.timelimit
         )
+        logger.info(f"[GET_LOBBY_INFO] Returning response: {response}")
+        return response
     except HTTPException:
         raise
     except Exception as e:
@@ -196,7 +227,7 @@ async def reconnect_user(reconnect_data: UserReconnect):
                 user_id=lobby.host.user_id,
                 user_name=lobby.host.name,
                 is_host=True,
-                lobby_started=lobby.start_time,
+                start_time=lobby.start_time.isoformat() if lobby.start_time else None,
                 participants=lobby.get_participant_names()
             )
         
@@ -208,7 +239,7 @@ async def reconnect_user(reconnect_data: UserReconnect):
                 user_id=participant.user_id,
                 user_name=participant.name,
                 is_host=False,
-                lobby_started=lobby.start_time,
+                start_time=lobby.start_time.isoformat() if lobby.start_time else None,
                 participants=lobby.get_participant_names()
             )
         
@@ -234,7 +265,7 @@ async def ask_question(pin: str, question: LobbyQuestion):
     - CORRECT (if you guessed the word)
     """
     try:
-        result = await GameMasterAgent.process_question(pin, question.question)
+        result = await game_master.process_question(pin, question.question)
 
         return LobbyResponse(
             response=result["response"],

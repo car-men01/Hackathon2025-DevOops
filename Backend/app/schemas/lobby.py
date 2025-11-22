@@ -7,6 +7,8 @@ class LobbyCreate(BaseModel):
     host_name: str = Field(..., description="Name of the host creating the lobby")
     secret_concept: str = Field(..., description="The secret word/concept to guess")
     context: Optional[str] = Field(None, description="Optional additional context for the concept")
+    topic: str = Field(..., description="Topic/description shown to participants")
+    time_limit: int = Field(..., description="Time limit in seconds")
 
 
 class LobbyCreateResponse(BaseModel):
@@ -38,8 +40,8 @@ class LobbyInfo(BaseModel):
     participants: List[str]
     secret_concept: Optional[str] = Field(None, description="Only visible to host")
     context: Optional[str] = Field(None, description="Only visible to host")
-    lobby_started: bool
-    lobby_active: bool
+    start_time: Optional[str] = Field(None, description="ISO datetime when lobby started")
+    timelimit: int = Field(..., description="Time limit in seconds")
 
 
 class LobbyQuestion(BaseModel):
@@ -63,12 +65,12 @@ class UserReconnect(BaseModel):
 
 
 class UserReconnectResponse(BaseModel):
-    """Schema for user reconnection response."""
+    """Schema for user reconnect response."""
     pin: str
     user_id: str
     user_name: str
     is_host: bool
-    lobby_started: bool
+    start_time: Optional[str] = Field(None, description="ISO datetime when lobby started")
     participants: List[str]
 
 
@@ -81,8 +83,7 @@ class LobbyStart(BaseModel):
 class LobbyStartResponse(BaseModel):
     """Schema for lobby start response."""
     pin: str
-    session_id: str
-    lobby_started: bool
+    start_time: str = Field(..., description="ISO datetime when lobby started")
     participants: List[str]
 
 
@@ -90,7 +91,6 @@ class LobbySession(BaseModel):
     """Schema for lobby session information."""
     session_id: str
     questions_asked: int
-    lobby_active: bool
     history: list[dict] = []
 
 

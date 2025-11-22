@@ -1,23 +1,49 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
+import { gameService } from '../../services';
 import './WaitingRoom.css';
 
 export const WaitingRoom: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, currentLobby } = useGame();
+  const { currentUser, currentLobby, updateLobby } = useGame();
+
+  // Poll for game start and participants updates
+  useEffect(() => {
+    if (!currentUser || !currentLobby) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const lobbyInfo = await gameService.getLobbyInfo(currentLobby.code, currentUser.id);
+        
+        // Update participants list
+        const users = gameService.convertParticipantsToUsers(
+          lobbyInfo.participants,
+          lobbyInfo.host_name,
+          currentUser.id,
+          currentUser.name,
+          false
+        );
+
+        updateLobby({ users });
+
+        // Check if game has started
+        if (lobbyInfo.start_time) {
+          updateLobby({ status: 'playing', start_time: lobbyInfo.start_time });
+          navigate('/participant-game');
+        }
+      } catch (err) {
+        console.error('Error polling lobby info:', err);
+      }
+    }, 2000); // Poll every 2 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [currentUser, currentLobby, navigate, updateLobby]);
 
   if (!currentUser || !currentLobby) {
     navigate('/');
     return null;
   }
-
-  // Simulate game starting after some time (in a real app, this would be triggered by the host)
-  React.useEffect(() => {
-    if (currentLobby.status === 'playing') {
-      navigate('/participant-game');
-    }
-  }, [currentLobby.status, navigate]);
 
   return (
     <div className="waiting-room-page">
