@@ -36,8 +36,8 @@ class LobbyInfo(BaseModel):
     pin: str
     host_name: str
     participants: List[str]
-    secret_concept: str
-    context: Optional[str]
+    secret_concept: Optional[str] = Field(None, description="Only visible to host")
+    context: Optional[str] = Field(None, description="Only visible to host")
     lobby_started: bool
     lobby_active: bool
 

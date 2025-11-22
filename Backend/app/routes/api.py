@@ -155,22 +155,25 @@ async def start_lobby(lobby_start: LobbyStart):
 
 
 @router.get("/lobby/{pin}", response_model=LobbyInfo)
-async def get_lobby_info(pin: str):
-    """Get information about a lobby using its PIN."""
+async def get_lobby_info(pin: str, user_id: str):
+    """Get information about a lobby using its PIN. Secret concept and context only visible to host."""
     try:
         lobby = lobbies.get(pin)
         
         if not lobby:
             raise HTTPException(status_code=404, detail="Lobby not found")
         
+        # Check if the requesting user is the host
+        is_host = lobby.host.user_id == user_id
+        
         return LobbyInfo(
             pin=lobby.pin,
             host_name=lobby.host.name,
             participants=lobby.get_participant_names(),
-            secret_concept=lobby.secret_concept,
-            context=lobby.context,
-            lobby_started=lobby.start_time,
-            lobby_active=lobby.lobby_active
+            secret_concept=lobby.secret_concept if is_host else None,
+            context=lobby.context if is_host else None,
+            lobby_started=lobby.lobby_started,
+            lobby_active=lobby.start_time
         )
     except HTTPException:
         raise
