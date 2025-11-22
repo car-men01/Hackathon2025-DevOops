@@ -123,6 +123,15 @@ export const HostGame: React.FC = () => {
     navigate('/results');
   };
 
+  const handleLeaveLobby = () => {
+    console.log('[HostGame] 🚪 Leaving lobby...');
+    // Clear localStorage
+    localStorage.removeItem('gameUserData');
+    console.log('[HostGame] ✅ LocalStorage cleared');
+    // Redirect to home
+    navigate('/');
+  };
+
   return (
     <div className="host-game-page">
       <div className="host-game-layout">
@@ -131,9 +140,14 @@ export const HostGame: React.FC = () => {
           <div className="header-left">
             <div className="header-top-row">
               <h1>Ask Jimmy</h1>
-              <button onClick={handleEndGame} className="end-game-button">
-                End Game
-              </button>
+              <div className="header-buttons">
+                <button onClick={handleLeaveLobby} className="end-game-button">
+                  Leave Lobby
+                </button>
+                <button onClick={handleEndGame} className="end-game-button">
+                  End Game
+                </button>
+              </div>
             </div>
             <div className="header-info-row">
               <div className="secret-word-display">
