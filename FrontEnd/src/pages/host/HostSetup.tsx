@@ -116,18 +116,22 @@ export const HostSetup: React.FC = () => {
       try {
         const origin = window.location.origin; 
         const joinLink = `${origin}/?pin=${createResponse.pin}`;
+
         const qrData = await gameService.generateQRCode(joinLink);
         setQrCodeUrl(qrData);
       } catch (qrErr) {
         console.error('Failed to generate QR code', qrErr);
+
+        // Don't block the flow if QR fails
       }
-      // --------------------------
+      // -------------------------------
 
       const newLobby: LobbyType = {
         code: createResponse.pin,
         ownerId: createResponse.hostId,
         // Use updatedUser here to ensure consistency
         users: [{ ...updatedUser, role: 'host' }], 
+
         status: 'waiting',
         questions: [],
         maxQuestions: 10,
@@ -223,6 +227,7 @@ export const HostSetup: React.FC = () => {
                 id="topic"
                 type="text"
                 placeholder="e.g., Biology"
+
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 className="setup-input"
@@ -306,7 +311,6 @@ export const HostSetup: React.FC = () => {
             </div>
             <p className="scan-hint">Scan with your phone to join automatically!</p>
             {/* --------------------------- */}
-
             <div className="players-waiting">
               <h3>Players in Lobby ({currentLobby.users.length})</h3>
               <div className="players-list">
@@ -321,6 +325,7 @@ export const HostSetup: React.FC = () => {
             </div>
 
             {error && <div className="error-message">{error}</div>}
+
 
             <button
               onClick={handleStartGame}

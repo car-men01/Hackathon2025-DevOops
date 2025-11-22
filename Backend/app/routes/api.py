@@ -13,7 +13,8 @@ from app.schemas.lobby import (
     LobbyInfo,
     UserReconnect,
     UserReconnectResponse,
-    LobbyDeleteResponse
+    LobbyDeleteResponse,
+    LeaderboardResponse
 )
 from app.services.GeminiAgent import GeminiAgent
 from app.services.GameMasterAgent import game_master
@@ -22,6 +23,7 @@ from app.models.user import User
 import uuid
 import logging
 from typing import Dict
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -162,9 +164,19 @@ async def start_lobby(lobby_start: LobbyStart):
             lobby.timelimit = lobby_start.time_limit
             logger.info(f"[START_LOBBY] Updated time_limit: {lobby_start.time_limit}")
         
+        # Parse start_time if provided
+        start_dt = None
+        if lobby_start.start_time:
+            try:
+                # Handle ISO format with Z or offset
+                start_dt = datetime.fromisoformat(lobby_start.start_time.replace('Z', '+00:00'))
+                logger.info(f"[START_LOBBY] Using provided start_time: {start_dt}")
+            except ValueError:
+                logger.warning(f"[START_LOBBY] Invalid start_time format: {lobby_start.start_time}, using current time")
+
         # Start lobby using Lobby method
         try:
-            lobby.start()
+            lobby.start(start_time=start_dt)
             logger.info(f"[START_LOBBY] Lobby started successfully: {lobby_start.pin}")
         except ValueError as e:
             logger.error(f"[START_LOBBY] Error starting lobby: {str(e)}")
@@ -324,6 +336,34 @@ async def ask_question(pin: str, question: LobbyQuestion):
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error processing question: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/lobby/{pin}/leaderboard", response_model=LeaderboardResponse)
+async def get_leaderboard(pin: str, limit: int = 10):
+    """
+    Get the leaderboard for a lobby.
+    
+    Returns users sorted by question count (ascending).
+    Use limit=-1 to get all users.
+    """
+    try:
+        leaderboard = game_master.get_leaderboard(pin)
+        
+        if leaderboard is None:
+            raise HTTPException(status_code=404, detail="Lobby not found")
+        
+        if limit != -1:
+            leaderboard = leaderboard[:limit]
+        
+        return LeaderboardResponse(
+            pin=pin,
+            leaderboard=leaderboard
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting leaderboard: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
 
