@@ -128,6 +128,7 @@ async def start_lobby(lobby_start: LobbyStart):
     
     The host uses this endpoint to start the lobby after participants have joined.
     This creates a lobby with the Lobby Master AI.
+    Optionally updates concept, context, topic, and time_limit if provided.
     """
     try:
         logger.info(f"[START_LOBBY] Request received: pin={lobby_start.pin}, host_id={lobby_start.host_id}")
@@ -145,6 +146,23 @@ async def start_lobby(lobby_start: LobbyStart):
         if lobby.host.user_id != lobby_start.host_id:
             logger.error(f"[START_LOBBY] Host ID mismatch: expected={lobby.host.user_id}, received={lobby_start.host_id}")
             raise HTTPException(status_code=403, detail="Only the host can start the lobby")
+        
+        # Update lobby fields if provided
+        if lobby_start.secret_concept is not None:
+            lobby.secret_concept = lobby_start.secret_concept
+            logger.info(f"[START_LOBBY] Updated secret_concept: {lobby_start.secret_concept}")
+        
+        if lobby_start.context is not None:
+            lobby.context = lobby_start.context
+            logger.info(f"[START_LOBBY] Updated context: {lobby_start.context}")
+        
+        if lobby_start.topic is not None:
+            lobby.topic = lobby_start.topic
+            logger.info(f"[START_LOBBY] Updated topic: {lobby_start.topic}")
+        
+        if lobby_start.time_limit is not None:
+            lobby.timelimit = lobby_start.time_limit
+            logger.info(f"[START_LOBBY] Updated time_limit: {lobby_start.time_limit}")
         
         # Start lobby using Lobby method
         try:
@@ -189,6 +207,8 @@ async def get_lobby_info(pin: str, user_id: str):
         is_host = lobby.host.user_id == user_id
         logger.info(f"[GET_LOBBY_INFO] User is host: {is_host}")
         
+        logger.info(f"[GET_LOBBY_INFO] Lobby topic: {lobby.topic}")
+        
         response = LobbyInfo(
             pin=lobby.pin,
             host_name=lobby.host.name,
@@ -196,9 +216,11 @@ async def get_lobby_info(pin: str, user_id: str):
             secret_concept=lobby.secret_concept if is_host else None,
             context=lobby.context if is_host else None,
             start_time=lobby.start_time.isoformat() if lobby.start_time else None,
-            timelimit=lobby.timelimit
+            timelimit=lobby.timelimit,
+            topic=lobby.topic
         )
-        logger.info(f"[GET_LOBBY_INFO] Returning response: {response}")
+        logger.info(f"[GET_LOBBY_INFO] Returning response with topic: {response.topic}")
+        logger.info(f"[GET_LOBBY_INFO] Full response: {response}")
         return response
     except HTTPException:
         raise
