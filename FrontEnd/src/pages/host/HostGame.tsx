@@ -193,13 +193,13 @@ export const HostGame: React.FC = () => {
               </div>
               <div className="stat-card">
                 <div className="stat-number">
-                  {currentLobby.questions.filter(q => q.answer === 'YES').length}
+                  {currentLobby.questions.filter(q => q.answer === 'Yes').length}
                 </div>
                 <div className="stat-label">YES Answers</div>
               </div>
               <div className="stat-card">
                 <div className="stat-number">
-                  {currentLobby.questions.filter(q => q.answer === 'NO').length}
+                  {currentLobby.questions.filter(q => q.answer === 'No').length}
                 </div>
                 <div className="stat-label">NO Answers</div>
               </div>
