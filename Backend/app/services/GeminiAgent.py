@@ -37,7 +37,7 @@ class GeminiAgent:
             # Build the full prompt with secret word context
             system_context = self.system_prompt
             if secret_word:
-                system_context += f"\n\nThe secret word is: {secret_word}"
+                system_context = system_context.replace("{{SECRET_WORD}}", secret_word)
 
             messages = [
                 SystemMessage(content=system_context),
