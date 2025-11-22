@@ -130,9 +130,9 @@ async def start_lobby(lobby_start: LobbyStart):
     """
     try:
         logger.info(f"[START_LOBBY] Request received: pin={lobby_start.pin}, host_id={lobby_start.host_id}")
-        logger.info(f"[START_LOBBY] Available lobbies: {list(lobbies.keys())}")
+        logger.info(f"[START_LOBBY] Available lobbies: {list(game_master.lobbies.keys())}")
         
-        lobby = lobbies.get(lobby_start.pin)
+        lobby = game_master.get_lobby(lobby_start.pin)
         
         if not lobby:
             logger.error(f"[START_LOBBY] Lobby not found: {lobby_start.pin}")
@@ -218,7 +218,7 @@ async def get_lobby_info(pin: str, user_id: str):
     """Get information about a lobby using its PIN. Secret concept and context only visible to host."""
     try:
         logger.info(f"[GET_LOBBY_INFO] Request received: pin={pin}, user_id={user_id}")
-        logger.info(f"[GET_LOBBY_INFO] Available lobbies: {list(lobbies.keys())}")
+        logger.info(f"[GET_LOBBY_INFO] Available lobbies: {list(game_master.lobbies.keys())}")
         
         lobby = game_master.get_lobby(pin)
         
@@ -240,6 +240,7 @@ async def get_lobby_info(pin: str, user_id: str):
             participants=lobby.get_participant_names(),
             topic=lobby.topic,
             timelimit=lobby.timelimit,
+            start_time=lobby.start_time.isoformat() if lobby.start_time else None,
             secret_concept=lobby.secret_concept if is_host else None,
             context=lobby.context if is_host else None,
             lobby_active=lobby.start_time is not None

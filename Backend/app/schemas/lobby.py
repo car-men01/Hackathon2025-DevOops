@@ -6,8 +6,6 @@ class LobbyCreate(BaseModel):
     """Schema for creating a new lobby."""
     host_name: str = Field(..., description="Name of the host creating the lobby")
     secret_concept: str = Field(..., description="The secret word/concept to guess")
-    topic: str = Field(..., description="Topic/category of the secret concept")
-    timelimit: int = Field(..., description="Time limit in seconds for the game")
     context: Optional[str] = Field(None, description="Optional additional context for the concept")
     topic: str = Field(..., description="Topic/description shown to participants")
     time_limit: int = Field(..., description="Time limit in seconds")
@@ -40,8 +38,6 @@ class LobbyInfo(BaseModel):
     pin: str
     host_name: str
     participants: List[str]
-    topic: str
-    timelimit: int
     secret_concept: Optional[str] = Field(None, description="Only visible to host")
     context: Optional[str] = Field(None, description="Only visible to host")
     start_time: Optional[str] = Field(None, description="ISO datetime when lobby started")
