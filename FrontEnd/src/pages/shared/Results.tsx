@@ -155,13 +155,13 @@ export const Results: React.FC = () => {
                   </div>
                   <div className="stat-item">
                     <span className="stat-value">
-                      {currentLobby.questions.filter(q => q.answer === 'YES').length}
+                      {currentLobby.questions.filter(q => q.answer === 'Yes').length}
                     </span>
                     <span className="stat-label">YES Answers</span>
                   </div>
                   <div className="stat-item">
                     <span className="stat-value">
-                      {currentLobby.questions.filter(q => q.answer === 'NO').length}
+                      {currentLobby.questions.filter(q => q.answer === 'No').length}
                     </span>
                     <span className="stat-label">NO Answers</span>
                   </div>
