@@ -82,6 +82,13 @@ export const Results: React.FC = () => {
     navigate('/');
   };
 
+  const handleBackToMenu = () => {
+    localStorage.removeItem('gameUserData');
+    setCurrentUser(null);
+    setCurrentLobby(null);
+    navigate('/');
+  };
+
   return (
     <div className="results-page">
       {/* Animated Bubbles */}
@@ -223,12 +230,18 @@ export const Results: React.FC = () => {
         </div>
 
         <div className="results-actions">
-          <button onClick={() => navigate('/host-game')} className="primary-action-button">
-            Back to Lobby
-          </button>
-          {isTeacher && (
-            <button onClick={handleNewGame} className="secondary-action-button">
-              New Game
+          {isTeacher ? (
+            <>
+              <button onClick={() => navigate('/host-game')} className="primary-action-button">
+                Back to Lobby
+              </button>
+              <button onClick={handleNewGame} className="secondary-action-button">
+                New Game
+              </button>
+            </>
+          ) : (
+            <button onClick={handleBackToMenu} className="primary-action-button">
+              Back to Menu
             </button>
           )}
         </div>
