@@ -116,11 +116,12 @@ class GameService {
   }
 
   // Ask a question to the AI
-  async askQuestion(pin: string, question: string): Promise<AskQuestionResponse> {
+  async askQuestion(pin: string, question: string, userId: string): Promise<AskQuestionResponse> {
     const data = await this.fetchAPI<AskQuestionResponse>(`/lobby/${pin}/question`, {
       method: 'POST',
       body: JSON.stringify({
         question,
+        user_id: userId,
       } as AskQuestionRequest),
     });
 

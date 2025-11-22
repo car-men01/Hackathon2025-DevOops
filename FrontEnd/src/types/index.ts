@@ -96,6 +96,7 @@ export interface LobbyInfoResponse {
 
 export interface AskQuestionRequest {
   question: string;
+  user_id: string;
 }
 
 export interface AskQuestionResponse {

@@ -155,7 +155,7 @@ export const ParticipantGame: React.FC = () => {
     setError('');
 
     try {
-      const response = await gameService.askQuestion(currentLobby.code, questionText.trim());
+      const response = await gameService.askQuestion(currentLobby.code, questionText.trim(), currentUser.id);
 
       const newQuestion: Question = {
         id: Math.random().toString(36).substr(2, 9),
