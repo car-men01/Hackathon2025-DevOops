@@ -22,7 +22,6 @@ export interface LobbyType {
   id?: string;
   code: string;
   ownerId: string;
-  topic?: string;
   concept?: string;
   context?: string;
   topic?: string;
