@@ -12,12 +12,12 @@ export interface Question {
   userId: string;
   userName: string;
   question: string;
-  answer: 'YES' | 'NO' | 'I_DONT_KNOW' | 'OUT_OF_CONTEXT';
+  answer: 'Yes' | 'No' | "I don't know" | 'Off-topic' | 'Invalid question' | 'CORRECT';
   timestamp: number;
 }
 
-export interface Lobby {
-  id: string;
+export interface LobbyType {
+  id?: string;
   code: string;
   ownerId: string;
   concept?: string;
@@ -28,10 +28,70 @@ export interface Lobby {
   questions: Question[];
   maxQuestions: number;
   winner?: User;
+  start_time?: string;
 }
 
 export interface GameState {
   currentUser: User | null;
-  currentLobby: Lobby | null;
+  currentLobby: LobbyType | null;
   selectedStudentId?: string;
 }
+
+// Backend API Types
+export interface CreateLobbyRequest {
+  host_name: string;
+  secret_concept: string;
+  context?: string;
+  topic?: string;
+  time_limit?: number;
+}
+
+export interface CreateLobbyResponse {
+  pin: string;
+  host_id: string;
+  host_name: string;
+}
+
+export interface JoinLobbyRequest {
+  pin: string;
+  participant_name: string;
+}
+
+export interface JoinLobbyResponse {
+  pin: string;
+  user_id: string;
+  participant_name: string;
+  host_name: string;
+  participants: string[];
+}
+
+export interface StartLobbyRequest {
+  pin: string;
+  host_id: string;
+}
+
+export interface StartLobbyResponse {
+  pin: string;
+  start_time: string;
+  participants: string[];
+}
+
+export interface LobbyInfoResponse {
+  pin: string;
+  host_name: string;
+  participants: string[];
+  secret_concept?: string;
+  context?: string;
+  start_time?: string;
+  timelimit: number;
+}
+
+export interface AskQuestionRequest {
+  question: string;
+}
+
+export interface AskQuestionResponse {
+  response: 'Yes' | 'No' | "I don't know" | 'Off-topic' | 'Invalid question' | 'CORRECT';
+  questions_remaining: number | null;
+}
+

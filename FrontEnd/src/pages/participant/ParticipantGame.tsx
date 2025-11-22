@@ -7,10 +7,11 @@ import './ParticipantGame.css';
 
 export const ParticipantGame: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, currentLobby, addQuestion, makeGuess } = useGame();
+  const { currentUser, currentLobby, addQuestion, updateLobby } = useGame();
   const [questionText, setQuestionText] = useState('');
   const [isAsking, setIsAsking] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(currentLobby?.timeLimit || 600);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!currentUser || !currentLobby) {
@@ -33,11 +34,38 @@ export const ParticipantGame: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Poll for lobby updates (other participants joining, questions, etc.)
+  useEffect(() => {
+    if (!currentUser || !currentLobby) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const lobbyInfo = await gameService.getLobbyInfo(currentLobby.code, currentUser.id);
+        
+        // Update participants list
+        const users = gameService.convertParticipantsToUsers(
+          lobbyInfo.participants,
+          lobbyInfo.host_name,
+          currentUser.id,
+          currentUser.name,
+          false
+        );
+
+        updateLobby({ users });
+      } catch (err) {
+        console.error('Error polling lobby info:', err);
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [currentUser, currentLobby, updateLobby]);
+
   if (!currentUser || !currentLobby) {
     return null;
   }
 
   const myQuestions = currentLobby.questions.filter(q => q.userId === currentUser.id);
+  
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -46,30 +74,35 @@ export const ParticipantGame: React.FC = () => {
 
   const handleAskQuestion = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!questionText.trim() || isAsking) return;
+    if (!questionText.trim() || isAsking || !currentLobby) return;
 
     setIsAsking(true);
+    setError('');
 
     try {
-      const newQuestion = await gameService.askQuestion(
-        questionText,
-        currentUser.id,
-        currentUser.name
-      );
+      const response = await gameService.askQuestion(currentLobby.code, questionText.trim());
 
-      // Check if the question contains the concept
-      if (currentLobby.concept && questionText.toLowerCase().includes(currentLobby.concept.toLowerCase())) {
-        // Show congratulations popup
-        const timeTaken = (currentLobby.timeLimit || 600) - timeRemaining;
-        alert(`🎉 Congratulations! You guessed the concept: "${currentLobby.concept}"\n\nYour time: ${formatTime(timeTaken)}`);
-        navigate('/results');
-        return;
-      }
+      const newQuestion: Question = {
+        id: Math.random().toString(36).substr(2, 9),
+        userId: currentUser.id,
+        userName: currentUser.name,
+        question: questionText.trim(),
+        answer: response.response,
+        timestamp: Date.now(),
+      };
 
       addQuestion(newQuestion);
       setQuestionText('');
-    } catch (error) {
-      console.error('Error asking question:', error);
+
+      // Check if the answer is CORRECT (user guessed the concept)
+      if (response.response === 'CORRECT') {
+        const timeTaken = (currentLobby.timeLimit || 600) - timeRemaining;
+        alert(`🎉 Congratulations! You guessed the concept!\n\nYour time: ${formatTime(timeTaken)}`);
+        navigate('/results');
+        return;
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to ask question');
     } finally {
       setIsAsking(false);
     }
@@ -83,24 +116,24 @@ export const ParticipantGame: React.FC = () => {
   };
 
   const getAnswerClass = (answer: string) => {
-    if (answer === 'YES') return 'answer-yes';
-    if (answer === 'NO') return 'answer-no';
-    if (answer === 'I_DONT_KNOW') return 'answer-idk';
-    if (answer === 'OUT_OF_CONTEXT') return 'answer-ooc';
+    if (answer === 'Yes') return 'answer-yes';
+    if (answer === 'No') return 'answer-no';
+    if (answer === "I don't know") return 'answer-idk';
+    if (answer === 'Off-topic' || answer === 'Invalid question') return 'answer-ooc';
+    if (answer === 'CORRECT') return 'answer-correct';
     return 'answer-na';
   };
 
   const getAnswerIcon = (answer: string) => {
-    if (answer === 'YES') return '✓';
-    if (answer === 'NO') return '✗';
-    if (answer === 'I_DONT_KNOW') return '?';
-    if (answer === 'OUT_OF_CONTEXT') return '!';
+    if (answer === 'Yes') return '✓';
+    if (answer === 'No') return '✗';
+    if (answer === "I don't know") return '?';
+    if (answer === 'Off-topic' || answer === 'Invalid question') return '!';
+    if (answer === 'CORRECT') return '🎉';
     return '?';
   };
 
   const getAnswerText = (answer: string) => {
-    if (answer === 'I_DONT_KNOW') return "I Don't Know";
-    if (answer === 'OUT_OF_CONTEXT') return 'Out of Context';
     return answer;
   };
 
@@ -185,6 +218,7 @@ export const ParticipantGame: React.FC = () => {
 
             {/* Chat Input */}
             <form onSubmit={handleAskQuestion} className="chat-input-container-participant">
+              {error && <div className="error-message" style={{ color: 'red', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{error}</div>}
               <img src="/narwal_icon.png" alt="Jimmy" className="narwhal-icon-chat" />
               <input
                 type="text"

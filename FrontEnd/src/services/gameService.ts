@@ -1,81 +1,160 @@
-import type { Lobby, Question, User, UserRole } from '../types';
-import { mockUsers, mockQuestions, MOCK_LOBBY_CODE } from './mockData';
+import type { 
+  User,
+  CreateLobbyRequest,
+  CreateLobbyResponse,
+  JoinLobbyRequest,
+  JoinLobbyResponse,
+  StartLobbyRequest,
+  StartLobbyResponse,
+  LobbyInfoResponse,
+  AskQuestionRequest,
+  AskQuestionResponse
+} from '../types';
+
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 class GameService {
-  // Create a mock lobby
-  createLobby(ownerId: string, _ownerRole: UserRole): Lobby {
-    return {
-      id: 'lobby-1',
-      code: MOCK_LOBBY_CODE,
-      ownerId,
-      concept: undefined,
-      context: undefined,
-      timeLimit: 600,
-      users: mockUsers,
-      status: 'waiting',
-      questions: [],
-      maxQuestions: 10,
-    };
-  }
+  private async fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
+    const url = `${API_URL}${endpoint}`;
+    console.log('[GameService] Fetching:', url, options?.method || 'GET');
+    
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    });
 
-  // Join a lobby by code
-  joinLobby(code: string): Lobby | null {
-    if (code === MOCK_LOBBY_CODE) {
-      return {
-        id: 'lobby-1',
-        code: MOCK_LOBBY_CODE,
-        ownerId: mockUsers[0].id,
-        concept: undefined,
-        context: undefined,
-        timeLimit: 600,
-        users: mockUsers,
-        status: 'waiting',
-        questions: [],
-        maxQuestions: 10,
-      };
+    console.log('[GameService] Response status:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      console.error('[GameService] Error response:', error);
+      throw new Error(error.detail || `HTTP ${response.status}`);
     }
-    return null;
+
+    const data = await response.json();
+    console.log('[GameService] Response data:', data);
+    return data;
   }
 
-  // Submit a question and get AI response
-  async askQuestion(question: string, userId: string, userName: string): Promise<Question> {
-    // Simulate AI processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+  // Create a lobby (for host)
+  async createLobby(
+    hostName: string, 
+    secretConcept: string, 
+    context?: string,
+    topic?: string,
+    timeLimit?: number
+  ): Promise<{ pin: string; hostId: string; hostName: string }> {
+    console.log('[GameService] createLobby called with:', { hostName, secretConcept, context, topic, timeLimit });
+    const data = await this.fetchAPI<CreateLobbyResponse>('/lobby/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        host_name: hostName,
+        secret_concept: secretConcept,
+        context: context || '',
+        topic: topic || '',
+        time_limit: timeLimit || 600
+      } as CreateLobbyRequest),
+    });
 
-    // Mock AI response
-    const answers: Array<'YES' | 'NO' | 'I_DONT_KNOW' | 'OUT_OF_CONTEXT'> = 
-      ['YES', 'NO', 'I_DONT_KNOW', 'OUT_OF_CONTEXT'];
-    const randomAnswer = answers[Math.floor(Math.random() * answers.length)];
-
-    return {
-      id: Math.random().toString(36).substr(2, 9),
-      userId,
-      userName,
-      question: question.trim(),
-      answer: randomAnswer,
-      timestamp: Date.now(),
+    const result = {
+      pin: data.pin,
+      hostId: data.host_id,
+      hostName: data.host_name,
     };
+    console.log('[GameService] createLobby result:', result);
+    return result;
   }
 
-  // Make a guess for the secret concept
-  makeGuess(guess: string, concept: string): boolean {
-    return guess.toLowerCase().trim() === concept.toLowerCase().trim();
+  // Join a lobby (for participants)
+  async joinLobby(pin: string, participantName: string): Promise<JoinLobbyResponse> {
+    const data = await this.fetchAPI<JoinLobbyResponse>('/lobby/join', {
+      method: 'POST',
+      body: JSON.stringify({
+        pin,
+        participant_name: participantName,
+      } as JoinLobbyRequest),
+    });
+
+    return data;
+  }
+
+  // Start the lobby (host only)
+  async startLobby(pin: string, hostId: string): Promise<StartLobbyResponse> {
+    const data = await this.fetchAPI<StartLobbyResponse>('/lobby/start', {
+      method: 'POST',
+      body: JSON.stringify({
+        pin,
+        host_id: hostId,
+      } as StartLobbyRequest),
+    });
+
+    return data;
+  }
+
+  // Get lobby information (polling endpoint)
+  async getLobbyInfo(pin: string, userId: string): Promise<LobbyInfoResponse> {
+    const data = await this.fetchAPI<LobbyInfoResponse>(
+      `/lobby/${pin}?user_id=${userId}`,
+      { method: 'GET' }
+    );
+
+    return data;
+  }
+
+  // Ask a question to the AI
+  async askQuestion(pin: string, question: string): Promise<AskQuestionResponse> {
+    const data = await this.fetchAPI<AskQuestionResponse>(`/lobby/${pin}/question`, {
+      method: 'POST',
+      body: JSON.stringify({
+        question,
+      } as AskQuestionRequest),
+    });
+
+    return data;
+  }
+
+  // Helper: Convert backend participants list to User objects
+  convertParticipantsToUsers(
+    participants: string[],
+    hostName: string,
+    currentUserId: string,
+    currentUserName: string,
+    isHost: boolean
+  ): User[] {
+    const users: User[] = [];
+    
+    // Add host
+    users.push({
+      id: isHost ? currentUserId : 'host-id',
+      name: hostName,
+      role: 'host',
+      score: 0,
+    });
+
+    // Add participants
+    participants.forEach((name, index) => {
+      if (name !== hostName) {
+        const isCurrentUser = name === currentUserName && !isHost;
+        users.push({
+          id: isCurrentUser ? currentUserId : `participant-${index}`,
+          name,
+          role: 'participant',
+          score: 0,
+        });
+      }
+    });
+
+    return users;
   }
 
   // Calculate score based on questions used
   calculateScore(questionsUsed: number): number {
     return Math.max(100 - questionsUsed * 10, 0);
   }
-
-  // Get all users
-  getUsers(): User[] {
-    return mockUsers;
-  }
-
-  // Get mock questions
-  getQuestions(): Question[] {
-    return mockQuestions;
-  }
 }
 
 export const gameService = new GameService();
+

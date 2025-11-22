@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { GameState, User, Lobby, Question, UserRole } from '../types';
-import { gameService } from '../services/gameService';
+import type { GameState, User, Lobby, Question } from '../types';
 
 interface GameContextType extends GameState {
   setCurrentUser: (user: User | null) => void;
@@ -97,8 +96,4 @@ export const useGame = () => {
   return context;
 };
 
-// Mock data generator
-export const createMockLobby = (ownerId: string, ownerRole: UserRole): Lobby => {
-  return gameService.createLobby(ownerId, ownerRole);
-};
 
