@@ -20,6 +20,7 @@ export interface Lobby {
   id: string;
   code: string;
   ownerId: string;
+  topic?: string;
   concept?: string;
   context?: string;
   timeLimit?: number;

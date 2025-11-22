@@ -16,6 +16,7 @@ export const HostSetup: React.FC = () => {
     if (!concept.trim() || !topic.trim() || !currentLobby) return;
 
     const updatedLobby = {
+      topic: topic.trim(),
       concept: concept.trim(),
       context: context.trim(),
       timeLimit: parseInt(timeLimit) * 60,
@@ -32,6 +33,7 @@ export const HostSetup: React.FC = () => {
     localStorage.setItem(`lobby_${currentLobby.code}`, JSON.stringify(lobbyData));
 
     navigate('/host-game');
+    window.scrollTo(0, 0);
   };
 
   if (!currentLobby) {

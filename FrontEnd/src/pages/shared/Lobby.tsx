@@ -30,6 +30,7 @@ export const Lobby: React.FC = () => {
     setCurrentUser(user);
     setCurrentLobby(lobby);
     navigate('/host-setup');
+    window.scrollTo(0, 0);
   };
 
   const handleJoinLobby = () => {
