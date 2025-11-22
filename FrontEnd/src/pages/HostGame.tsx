@@ -1,0 +1,181 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useGame } from '../context/GameContext';
+import './HostGame.css';
+
+export const HostGame: React.FC = () => {
+  const navigate = useNavigate();
+  const { currentLobby, selectedStudentId, setSelectedStudent } = useGame();
+  const [selectedStudent, setLocalSelectedStudent] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!currentLobby || currentLobby.status !== 'playing') {
+      navigate('/');
+    }
+  }, [currentLobby, navigate]);
+
+  if (!currentLobby) {
+    return null;
+  }
+
+  const students = currentLobby.users.filter(u => u.role === 'student');
+  const currentStudentId = selectedStudent || selectedStudentId || students[0]?.id;
+  const studentQuestions = currentLobby.questions.filter(q => q.userId === currentStudentId);
+  const currentStudentName = students.find(s => s.id === currentStudentId)?.name || '';
+
+  const handleStudentSelect = (studentId: string) => {
+    setLocalSelectedStudent(studentId);
+    setSelectedStudent(studentId);
+  };
+
+  const getAnswerClass = (answer: string) => {
+    if (answer === 'YES') return 'answer-yes';
+    if (answer === 'NO') return 'answer-no';
+    if (answer === 'I_DONT_KNOW') return 'answer-idk';
+    if (answer === 'OUT_OF_CONTEXT') return 'answer-ooc';
+    return 'answer-na';
+  };
+
+  const getAnswerIcon = (answer: string) => {
+    if (answer === 'YES') return '✓';
+    if (answer === 'NO') return '✗';
+    if (answer === 'I_DONT_KNOW') return '?';
+    if (answer === 'OUT_OF_CONTEXT') return '!';
+    return '?';
+  };
+
+  const getAnswerText = (answer: string) => {
+    if (answer === 'I_DONT_KNOW') return "I Don't Know";
+    if (answer === 'OUT_OF_CONTEXT') return 'Out of Context';
+    return answer;
+  };
+
+  const handleEndGame = () => {
+    navigate('/results');
+  };
+
+  return (
+    <div className="host-game-page">
+      <div className="host-game-layout">
+        {/* Header */}
+        <div className="host-header">
+          <div className="header-left">
+            <h1>Ask Jimmy</h1>
+            <div className="concept-display">
+              <span className="concept-label">Secret Concept:</span>
+              <span className="concept-value">{currentLobby.concept}</span>
+            </div>
+            {currentLobby.context && (
+              <div className="context-display">
+                <span className="context-label">📝 Context:</span>
+                <span className="context-value">{currentLobby.context}</span>
+              </div>
+            )}
+          </div>
+          <button onClick={handleEndGame} className="end-game-button">
+            End Game
+          </button>
+        </div>
+
+        {/* Main Content */}
+        <div className="host-content">
+          {/* Participant Selector */}
+          <div className="participants-sidebar">
+            <h3>Participants ({students.length})</h3>
+            <div className="participants-list">
+              {students.map((student) => {
+                const studentQCount = currentLobby.questions.filter(q => q.userId === student.id).length;
+                return (
+                  <button
+                    key={student.id}
+                    onClick={() => handleStudentSelect(student.id)}
+                    className={`participant-selector-button ${currentStudentId === student.id ? 'active' : ''}`}
+                  >
+                    <div className="participant-avatar-small">
+                      {student.name[0].toUpperCase()}
+                    </div>
+                    <div className="participant-selector-info">
+                      <span className="participant-selector-name">{student.name}</span>
+                      <span className="participant-question-count">{studentQCount} questions</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Conversation View */}
+          <div className="conversation-panel">
+            <div className="conversation-header">
+              <h2>{currentStudentName}'s Conversation</h2>
+              <p>{studentQuestions.length} questions asked</p>
+            </div>
+
+            <div className="conversation-log">
+              {studentQuestions.length === 0 ? (
+                <div className="empty-conversation">
+                  <p>This participant hasn't asked any questions yet.</p>
+                </div>
+              ) : (
+                studentQuestions.map((q) => (
+                  <div key={q.id} className="host-log-entry">
+                    {/* User Question */}
+                    <div className="user-message-row">
+                      <div className="user-avatar-circle">
+                        {q.userName[0].toUpperCase()}
+                      </div>
+                      <div className="host-question-bubble">
+                        <div className="bubble-timestamp">
+                          {new Date(q.timestamp).toLocaleTimeString()}
+                        </div>
+                        <p className="host-question-text">{q.question}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Jimmy's Answer */}
+                    <div className="jimmy-answer-row">
+                      <div className="jimmy-avatar-circle">
+                        <img src="/narwal_icon.png" alt="Jimmy" className="jimmy-avatar-icon" />
+                      </div>
+                      <div className={`host-answer-bubble ${getAnswerClass(q.answer)}`}>
+                        <span className="answer-icon">{getAnswerIcon(q.answer)}</span>
+                        <span className="answer-text">{getAnswerText(q.answer)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Stats Panel */}
+          <div className="stats-panel">
+            <h3>Game Statistics</h3>
+            <div className="stats-cards">
+              <div className="stat-card">
+                <div className="stat-number">{currentLobby.questions.length}</div>
+                <div className="stat-label">Total Questions</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-number">{students.length}</div>
+                <div className="stat-label">Active Participants</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-number">
+                  {currentLobby.questions.filter(q => q.answer === 'YES').length}
+                </div>
+                <div className="stat-label">YES Answers</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-number">
+                  {currentLobby.questions.filter(q => q.answer === 'NO').length}
+                </div>
+                <div className="stat-label">NO Answers</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
