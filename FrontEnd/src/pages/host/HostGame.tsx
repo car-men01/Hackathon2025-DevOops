@@ -129,22 +129,22 @@ export const HostGame: React.FC = () => {
         {/* Header */}
         <div className="host-header">
           <div className="header-left">
-              <div className="header-top-row">
-                  <h1>Ask Jimmy</h1>
-                  <button onClick={handleEndGame} className="end-game-button">
-                      End Game
-                  </button>
+            <div className="header-top-row">
+              <h1>Ask Jimmy</h1>
+              <button onClick={handleEndGame} className="end-game-button">
+                End Game
+              </button>
+            </div>
+            <div className="header-info-row">
+              <div className="secret-word-display">
+                <span className="secret-word-label">Secret Word:</span>
+                <span className="secret-word-value">{currentLobby.concept}</span>
               </div>
-              <div className="header-info-row">
-                  <div className="secret-word-display">
-                      <span className="secret-word-label">Secret Word:</span>
-                      <span className="secret-word-value">{currentLobby.concept}</span>
-                  </div>
-                  <div className="concept-display">
-                      <span className="concept-label">Topic:</span>
-                      <span className="concept-value">{currentLobby.topic || 'Not set'}</span>
-                  </div>
+              <div className="concept-display">
+                <span className="concept-label">Topic:</span>
+                <span className="concept-value">{currentLobby.topic || 'Not set'}</span>
               </div>
+            </div>
             {currentLobby.context && (
               <div className="context-display">
                 <span className="context-label">Context:</span>
