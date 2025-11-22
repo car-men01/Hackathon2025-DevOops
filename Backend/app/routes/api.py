@@ -16,7 +16,8 @@ from app.schemas.lobby import (
     LobbyInfo,
     UserReconnect,
     UserReconnectResponse,
-    LobbyDeleteResponse
+    LobbyDeleteResponse,
+    LeaderboardResponse
 )
 from app.services.GeminiAgent import GeminiAgent
 from app.services.GameMasterAgent import game_master
@@ -373,6 +374,34 @@ async def ask_question(pin: str, question: LobbyQuestion):
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error processing question: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/lobby/{pin}/leaderboard", response_model=LeaderboardResponse)
+async def get_leaderboard(pin: str, limit: int = 10):
+    """
+    Get the leaderboard for a lobby.
+    
+    Returns users sorted by question count (ascending).
+    Use limit=-1 to get all users.
+    """
+    try:
+        leaderboard = game_master.get_leaderboard(pin)
+        
+        if leaderboard is None:
+            raise HTTPException(status_code=404, detail="Lobby not found")
+        
+        if limit != -1:
+            leaderboard = leaderboard[:limit]
+        
+        return LeaderboardResponse(
+            pin=pin,
+            leaderboard=leaderboard
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting leaderboard: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
 

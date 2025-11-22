@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react'; // Added useEffect
+import { useNavigate, useSearchParams } from 'react-router-dom'; // Added useSearchParams
 import { useGame } from '../../context/GameContext';
 import type { UserRole, User, LobbyType } from '../../types';
 import { gameService } from '../../services/gameService';
@@ -9,12 +9,27 @@ import './Lobby.css';
 
 export const Lobby: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams(); // Initialize search params hook
   const { setCurrentUser, setCurrentLobby } = useGame();
+  
   const [name, setName] = useState('');
   const [lobbyCode, setLobbyCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // --- NEW CODE START ---
+  // Check URL for PIN (QR Code Logic)
+  useEffect(() => {
+    const pinFromUrl = searchParams.get('pin'); // Checks for ?pin=XXXXXX
+    
+    if (pinFromUrl) {
+      console.log('QR Code detected, joining lobby:', pinFromUrl);
+      setIsJoining(true); // Switch UI to Join mode
+      setLobbyCode(pinFromUrl.toUpperCase()); // Auto-fill the code
+    }
+  }, [searchParams]);
+  // --- NEW CODE END ---
 
   const handleCreateLobby = async () => {
     console.log('Create Lobby');
@@ -23,7 +38,6 @@ export const Lobby: React.FC = () => {
       return;
     }
 
-    console.log('Create Lobby2');
     setIsLoading(true);
     setError('');
 
@@ -177,6 +191,8 @@ export const Lobby: React.FC = () => {
             onChange={(e) => setName(e.target.value.slice(0, INPUT_LIMITS.NAME))}
             className="lobby-input"
             disabled={isLoading}
+            // Optional: Auto-focus on name if QR code was used
+            autoFocus={isJoining} 
           />
 
           {isJoining && (
@@ -188,6 +204,7 @@ export const Lobby: React.FC = () => {
               className="lobby-input"
               maxLength={INPUT_LIMITS.LOBBY_CODE}
               disabled={isLoading}
+              // If coming from QR code, we might want to make this read-only or just visually filled
             />
           )}
 
@@ -217,4 +234,3 @@ export const Lobby: React.FC = () => {
     </div>
   );
 };
-
