@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.schemas.lobby import (
     LobbyQuestion,
     LobbyResponse,
-    LobbySession,
     ChatRequest,
     ChatResponse,
     LobbyCreate,
@@ -117,7 +116,7 @@ async def start_lobby(lobby_start: LobbyStart):
     Start the lobby.
     
     The host uses this endpoint to start the lobby after participants have joined.
-    This creates a session with the Lobby Master AI.
+    This creates a lobby with the Lobby Master AI.
     """
     try:
         lobby = lobbies.get(lobby_start.pin)
@@ -135,7 +134,7 @@ async def start_lobby(lobby_start: LobbyStart):
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         
-        logger.info(f"Lobby started {lobby_start.pin} with session {session_id}")
+        logger.info(f"Lobby started {lobby_start.pin}")
         
         return LobbyStartResponse(
             pin=lobby.pin,
@@ -182,7 +181,7 @@ async def reconnect_user(reconnect_data: UserReconnect):
     """
     Reconnect a user (host or participant) to a lobby after page refresh.
     
-    Users provide their PIN and user_id to restore their session.
+    Users provide their PIN and user_id.
     """
     try:
         lobby = lobbies.get(reconnect_data.pin)
@@ -221,10 +220,10 @@ async def reconnect_user(reconnect_data: UserReconnect):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/lobby/{session_id}/question", response_model=LobbyResponse)
-async def ask_question(session_id: str, question: LobbyQuestion):
+@router.post("/lobby/{pin}/question", response_model=LobbyResponse)
+async def ask_question(pin: str, question: LobbyQuestion):
     """
-    Ask a question in an active lobby session.
+    Ask a question in an active lobby.
 
     The Lobby Master will respond with one of the allowed responses:
     - Yes
@@ -235,7 +234,7 @@ async def ask_question(session_id: str, question: LobbyQuestion):
     - CORRECT (if you guessed the word)
     """
     try:
-        result = await GameMasterAgent.process_question(session_id, question.question)
+        result = await GameMasterAgent.process_question(pin, question.question)
 
         return LobbyResponse(
             response=result["response"],
