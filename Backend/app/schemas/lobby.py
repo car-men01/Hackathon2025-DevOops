@@ -6,6 +6,8 @@ class LobbyCreate(BaseModel):
     """Schema for creating a new lobby."""
     host_name: str = Field(..., description="Name of the host creating the lobby")
     secret_concept: str = Field(..., description="The secret word/concept to guess")
+    topic: str = Field(..., description="Topic/category of the secret concept")
+    timelimit: int = Field(..., description="Time limit in seconds for the game")
     context: Optional[str] = Field(None, description="Optional additional context for the concept")
 
 
@@ -36,6 +38,8 @@ class LobbyInfo(BaseModel):
     pin: str
     host_name: str
     participants: List[str]
+    topic: str
+    timelimit: int
     secret_concept: Optional[str] = Field(None, description="Only visible to host")
     context: Optional[str] = Field(None, description="Only visible to host")
     lobby_started: bool
@@ -44,16 +48,15 @@ class LobbyInfo(BaseModel):
 
 class LobbyQuestion(BaseModel):
     """Schema for a question."""
+    user_id: str = Field(..., description="ID of the user asking the question")
     question: str = Field(..., description="The yes/no question to ask the Lobby Master")
 
 
 class LobbyResponse(BaseModel):
     """Schema for the Lobby Master's response."""
-    response: Literal["Yes", "No", "I don't know", "Off-topic", "Invalid question", "CORRECT"] = Field(
-        ...,
-        description="The Lobby Master's strict response"
-    )
-    questions_remaining: Optional[int] = Field(None, description="Number of questions remaining")
+    question_id: str = Field(..., description="ID of the question that was answered")
+    response: str = Field(..., description="The Lobby Master's response")
+    message: str = Field(..., description="The original question message")
 
 
 class UserReconnect(BaseModel):
@@ -81,7 +84,6 @@ class LobbyStart(BaseModel):
 class LobbyStartResponse(BaseModel):
     """Schema for lobby start response."""
     pin: str
-    session_id: str
     lobby_started: bool
     participants: List[str]
 
