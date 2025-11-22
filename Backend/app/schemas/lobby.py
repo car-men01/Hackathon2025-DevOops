@@ -47,16 +47,15 @@ class LobbyInfo(BaseModel):
 
 class LobbyQuestion(BaseModel):
     """Schema for a question."""
+    user_id: str = Field(..., description="ID of the user asking the question")
     question: str = Field(..., description="The yes/no question to ask the Lobby Master")
 
 
 class LobbyResponse(BaseModel):
     """Schema for the Lobby Master's response."""
-    response: Literal["Yes", "No", "I don't know", "Off-topic", "Invalid question", "CORRECT"] = Field(
-        ...,
-        description="The Lobby Master's strict response"
-    )
-    questions_remaining: Optional[int] = Field(None, description="Number of questions remaining")
+    question_id: str = Field(..., description="ID of the question that was answered")
+    response: str = Field(..., description="The Lobby Master's response")
+    message: str = Field(..., description="The original question message")
 
 
 class UserReconnect(BaseModel):
@@ -90,6 +89,12 @@ class LobbyStartResponse(BaseModel):
     pin: str
     start_time: str = Field(..., description="ISO datetime when lobby started")
     participants: List[str]
+
+
+class LobbyDeleteResponse(BaseModel):
+    """Schema for lobby deletion response."""
+    pin: str
+    message: str = Field(..., description="Confirmation message")
 
 
 class LobbySession(BaseModel):
