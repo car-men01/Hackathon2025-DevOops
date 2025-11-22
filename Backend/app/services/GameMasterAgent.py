@@ -1,4 +1,4 @@
-from app.services import GeminiAgent
+from app.services.GeminiAgent import GeminiAgent
 from typing import Dict, Optional
 
 class GameMasterAgent:
@@ -68,3 +68,8 @@ class GameMasterAgent:
             "questions_remaining": questions_remaining,
             "game_active": session["game_active"]
         }
+
+
+# Global instance - import this in your routes
+game_master = GameMasterAgent()
+
