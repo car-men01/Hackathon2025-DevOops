@@ -149,3 +149,23 @@
 .leave-button:hover {
   background: #FFF0F0;
 }
+
+.end-game-button {
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #FF6347;
+  border-radius: 16px;
+  background: white;
+  color: #FF6347;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+}
+
+.end-game-button:hover {
+  background: #FF6347;
+  color: white;
+}

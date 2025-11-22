@@ -176,8 +176,10 @@ export const ParticipantGame: React.FC = () => {
         navigate('/results');
         return;
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to ask question');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      }
     } finally {
       setIsAsking(false);
     }
@@ -212,6 +214,15 @@ export const ParticipantGame: React.FC = () => {
     return answer;
   };
 
+  const handleLeaveLobby = () => {
+    console.log('[ParticipantGame] 🚪 Leaving lobby...');
+    // Clear localStorage
+    localStorage.removeItem('gameUserData');
+    console.log('[ParticipantGame] ✅ LocalStorage cleared');
+    // Redirect to home
+    navigate('/');
+  };
+
   return (
     <div className="participant-game-page">
       <div className="participant-game-layout">
@@ -224,6 +235,9 @@ export const ParticipantGame: React.FC = () => {
               <span className="participant-topic-value">{currentLobby.topic || 'Not set'}</span>
             </div>
           </div>
+          <button onClick={handleLeaveLobby} className="end-game-button">
+            Leave Lobby
+          </button>
         </div>
 
         {/* Main Content */}
