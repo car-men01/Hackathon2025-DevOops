@@ -189,6 +189,8 @@ async def get_lobby_info(pin: str, user_id: str):
         is_host = lobby.host.user_id == user_id
         logger.info(f"[GET_LOBBY_INFO] User is host: {is_host}")
         
+        logger.info(f"[GET_LOBBY_INFO] Lobby topic: {lobby.topic}")
+        
         response = LobbyInfo(
             pin=lobby.pin,
             host_name=lobby.host.name,
@@ -196,9 +198,11 @@ async def get_lobby_info(pin: str, user_id: str):
             secret_concept=lobby.secret_concept if is_host else None,
             context=lobby.context if is_host else None,
             start_time=lobby.start_time.isoformat() if lobby.start_time else None,
-            timelimit=lobby.timelimit
+            timelimit=lobby.timelimit,
+            topic=lobby.topic
         )
-        logger.info(f"[GET_LOBBY_INFO] Returning response: {response}")
+        logger.info(f"[GET_LOBBY_INFO] Returning response with topic: {response.topic}")
+        logger.info(f"[GET_LOBBY_INFO] Full response: {response}")
         return response
     except HTTPException:
         raise

@@ -42,6 +42,7 @@ class LobbyInfo(BaseModel):
     context: Optional[str] = Field(None, description="Only visible to host")
     start_time: Optional[str] = Field(None, description="ISO datetime when lobby started")
     timelimit: int = Field(..., description="Time limit in seconds")
+    topic: str = Field(..., description="Topic/description visible to all participants")
 
 
 class LobbyQuestion(BaseModel):

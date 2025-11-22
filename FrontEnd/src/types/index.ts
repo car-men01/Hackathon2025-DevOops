@@ -84,6 +84,7 @@ export interface LobbyInfoResponse {
   context?: string;
   start_time?: string;
   timelimit: number;
+  topic: string;
 }
 
 export interface AskQuestionRequest {
