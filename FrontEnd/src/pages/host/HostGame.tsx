@@ -123,8 +123,19 @@ export const HostGame: React.FC = () => {
     navigate('/results');
   };
 
-  const handleLeaveLobby = () => {
+  const handleLeaveLobby = async () => {
     console.log('[HostGame] 🚪 Leaving lobby...');
+    try {
+      if (currentLobby && currentUser) {
+        // Dynamically import gameService to avoid circular dependencies if any
+        const { gameService } = await import('../../services/gameService');
+        console.log('[HostGame] Deleting lobby:', currentLobby.code);
+        await gameService.deleteLobby(currentLobby.code, currentUser.id);
+        console.log('[HostGame] Lobby deleted successfully');
+      }
+    } catch (error) {
+      console.error('[HostGame] Error deleting lobby:', error);
+    }
     // Clear localStorage
     localStorage.removeItem('gameUserData');
     console.log('[HostGame] ✅ LocalStorage cleared');

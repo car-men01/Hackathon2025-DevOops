@@ -33,6 +33,11 @@ class Lobby:
             raise ValueError("Cannot use the same name as the host")
         
         self.participants[participant.user_id] = participant
+
+    def remove_participant(self, user_id: str) -> None:
+        """Remove a participant from the lobby."""
+        if user_id in self.participants:
+            del self.participants[user_id]
     
     def get_participant_names(self) -> list[str]:
         """Get list of all participant names."""

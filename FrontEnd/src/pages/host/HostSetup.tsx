@@ -176,8 +176,17 @@ export const HostSetup: React.FC = () => {
     }
   };
 
-  const handleLeaveLobby = () => {
+  const handleLeaveLobby = async () => {
     console.log('[HostSetup] 🚪 Leaving lobby...');
+    try {
+      if (currentLobby && currentUser) {
+        console.log('[HostSetup] Deleting lobby:', currentLobby.code);
+        await gameService.deleteLobby(currentLobby.code, currentUser.id);
+        console.log('[HostSetup] Lobby deleted successfully');
+      }
+    } catch (error) {
+      console.error('[HostSetup] Error deleting lobby:', error);
+    }
     localStorage.removeItem('gameUserData');
     console.log('[HostSetup] ✅ LocalStorage cleared');
     navigate('/');

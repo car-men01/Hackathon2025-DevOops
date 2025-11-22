@@ -8,8 +8,11 @@ from app.schemas.lobby import (
     LobbyCreateResponse,
     ParticipantJoin,
     ParticipantJoinResponse,
+    ParticipantLeave,
+    ParticipantLeaveResponse,
     LobbyStart,
     LobbyStartResponse,
+    LobbyDelete,
     LobbyInfo,
     UserReconnect,
     UserReconnectResponse,
@@ -120,6 +123,35 @@ async def join_lobby(join_data: ParticipantJoin):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/lobby/leave", response_model=ParticipantLeaveResponse)
+async def leave_lobby(leave_data: ParticipantLeave):
+    """
+    Leave a lobby.
+    
+    Participants provide the 7-digit PIN and their user_id to leave the lobby.
+    """
+    try:
+        lobby = game_master.get_lobby(leave_data.pin)
+        
+        if not lobby:
+            raise HTTPException(status_code=404, detail="Lobby not found with that PIN")
+        
+        # Remove participant using Lobby method
+        lobby.remove_participant(leave_data.user_id)
+        
+        logger.info(f"Participant {leave_data.user_id} left lobby {leave_data.pin}")
+        
+        return ParticipantLeaveResponse(
+            pin=lobby.pin,
+            message="Successfully left the lobby"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error leaving lobby: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/lobby/start", response_model=LobbyStartResponse)
 async def start_lobby(lobby_start: LobbyStart):
     """
@@ -197,24 +229,30 @@ async def start_lobby(lobby_start: LobbyStart):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/lobby/{pin}", response_model=LobbyDeleteResponse)
-async def delete_lobby(pin: str):
+@router.post("/lobby/delete", response_model=LobbyDeleteResponse)
+async def delete_lobby(delete_data: LobbyDelete):
     """
     Delete a lobby and all its data (users and questions).
+    Only the host can delete the lobby.
     """
     try:
-        lobby = game_master.get_lobby(pin)
+        lobby = game_master.get_lobby(delete_data.pin)
         
         if not lobby:
             raise HTTPException(status_code=404, detail="Lobby not found with that PIN")
         
-        # Delete the lobby from game_master
-        del game_master.lobbies[pin]
+        # Verify host_id
+        if lobby.host.user_id != delete_data.host_id:
+            logger.error(f"[DELETE_LOBBY] Host ID mismatch: expected={lobby.host.user_id}, received={delete_data.host_id}")
+            raise HTTPException(status_code=403, detail="Only the host can delete the lobby")
         
-        logger.info(f"Lobby deleted {pin}")
+        # Delete the lobby from game_master
+        del game_master.lobbies[delete_data.pin]
+        
+        logger.info(f"Lobby deleted {delete_data.pin}")
         
         return LobbyDeleteResponse(
-            pin=pin,
+            pin=delete_data.pin,
             message="Lobby and all associated data deleted successfully"
         )
     except HTTPException:

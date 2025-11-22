@@ -32,8 +32,15 @@ export const WaitingRoom: React.FC = () => {
           updateLobby({ status: 'playing', start_time: lobbyInfo.start_time });
           navigate('/participant-game');
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('Error polling lobby info:', err);
+        // If lobby not found (404), it means host deleted it
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (errorMessage.includes('404') || errorMessage.includes('Lobby not found')) {
+          console.log('[WaitingRoom] Lobby deleted by host, redirecting to home');
+          localStorage.removeItem('gameUserData');
+          navigate('/');
+        }
       }
     }, 2000); // Poll every 2 seconds
 
@@ -73,8 +80,15 @@ export const WaitingRoom: React.FC = () => {
           </div>
         </div>
 
-        <button onClick={() => {
+        <button onClick={async () => {
           console.log('[WaitingRoom] 🚪 Leaving lobby...');
+          try {
+            if (currentUser && currentLobby) {
+              await gameService.leaveLobby(currentLobby.code, currentUser.id);
+            }
+          } catch (error) {
+            console.error('[WaitingRoom] Error leaving lobby:', error);
+          }
           localStorage.removeItem('gameUserData');
           console.log('[WaitingRoom] ✅ LocalStorage cleared');
           navigate('/');

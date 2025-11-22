@@ -106,6 +106,28 @@ class GameService {
     return data;
   }
 
+  // Leave a lobby
+  async leaveLobby(pin: string, userId: string): Promise<void> {
+    await this.fetchAPI('/lobby/leave', {
+      method: 'POST',
+      body: JSON.stringify({
+        pin,
+        user_id: userId
+      }),
+    });
+  }
+
+  // Delete a lobby (host only)
+  async deleteLobby(pin: string, hostId: string): Promise<void> {
+    await this.fetchAPI('/lobby/delete', {
+      method: 'POST',
+      body: JSON.stringify({
+        pin,
+        host_id: hostId
+      }),
+    });
+  }
+
   // Get lobby information (polling endpoint)
   async getLobbyInfo(pin: string, userId: string): Promise<LobbyInfoResponse> {
     const data = await this.fetchAPI<LobbyInfoResponse>(

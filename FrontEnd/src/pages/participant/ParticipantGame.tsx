@@ -127,8 +127,15 @@ export const ParticipantGame: React.FC = () => {
         updateLobby({ 
           users
         });
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('Error polling lobby info:', err);
+        // If lobby not found (404), it means host deleted it
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (errorMessage.includes('404') || errorMessage.includes('Lobby not found')) {
+          console.log('[ParticipantGame] Lobby deleted by host, redirecting to home');
+          localStorage.removeItem('gameUserData');
+          navigate('/');
+        }
       }
     }, 3000); // Poll every 3 seconds
 
