@@ -8,7 +8,8 @@ import type {
   StartLobbyResponse,
   LobbyInfoResponse,
   AskQuestionRequest,
-  AskQuestionResponse
+  AskQuestionResponse,
+  GenerateQRResponse
 } from '../types';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'https://backend-production-fa35.up.railway.app/api/v1';
@@ -37,6 +38,22 @@ class GameService {
     const data = await response.json();
     console.log('[GameService] Response data:', data);
     return data;
+  }
+
+  // Generate a QR Code for a specific link
+  async generateQRCode(link: string): Promise<string> {
+    console.log('[GameService] Generating QR code for:', link);
+    
+    // Your Python API defines 'link' as a function argument without Body(), 
+    // so FastAPI expects it as a query parameter: /qr/generate?link=...
+    const encodedLink = encodeURIComponent(link);
+    
+    const data = await this.fetchAPI<GenerateQRResponse>(`/qr/generate?link=${encodedLink}`, {
+      method: 'POST',
+      // No body needed as data is in the query param
+    });
+
+    return data.qr_code_data_url;
   }
 
   // Create a lobby (for host)

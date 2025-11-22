@@ -57,6 +57,10 @@ export interface CreateLobbyResponse {
   host_name: string;
 }
 
+export interface GenerateQRResponse {
+  qr_code_data_url: string;
+}
+
 export interface JoinLobbyRequest {
   pin: string;
   participant_name: string;
