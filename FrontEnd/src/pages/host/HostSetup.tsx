@@ -59,14 +59,17 @@ export const HostSetup: React.FC = () => {
         );
         console.log('[HostSetup] Converted users:', users);
 
-        updateLobby({ users });
+        updateLobby({ 
+          users,
+          ...(lobbyInfo.topic && { topic: lobbyInfo.topic })
+        });
       } catch (err) {
         console.error('[HostSetup] Error polling lobby info:', err);
       }
     }, 2000); // Poll every 2 seconds
 
     return () => clearInterval(pollInterval);
-  }, [currentLobby, currentUser, lobbyCreated]);
+  }, [currentLobby, currentUser, lobbyCreated, updateLobby]);
 
   const handleStartGame = async () => {
     console.log('[HostSetup] handleStartGame called - START');
@@ -120,6 +123,7 @@ export const HostSetup: React.FC = () => {
           maxQuestions: 10,
           concept: concept.trim(),
           context: context.trim(),
+          topic: topic.trim(),
           timeLimit: parseInt(timeLimit) * 60,
         };
 
@@ -157,6 +161,7 @@ export const HostSetup: React.FC = () => {
           status: 'playing',
           concept: concept.trim(),
           context: context.trim(),
+          topic: topic.trim(),
           timeLimit: parseInt(timeLimit) * 60,
         });
         console.log('[HostSetup] Navigating to host-game');
