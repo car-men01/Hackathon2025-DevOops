@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../../context/GameContext';
 import './HostGame.css';
 
 export const HostGame: React.FC = () => {
   const navigate = useNavigate();
   const { currentLobby, selectedStudentId, setSelectedStudent } = useGame();
   const [selectedStudent, setLocalSelectedStudent] = useState<string | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState(currentLobby?.timeLimit || 600);
 
   useEffect(() => {
     if (!currentLobby || currentLobby.status !== 'playing') {
@@ -14,11 +15,26 @@ export const HostGame: React.FC = () => {
     }
   }, [currentLobby, navigate]);
 
+  useEffect(() => {
+    // Countdown timer
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev <= 0) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   if (!currentLobby) {
     return null;
   }
 
-  const students = currentLobby.users.filter(u => u.role === 'student');
+  const students = currentLobby.users.filter(u => u.role === 'participant');
   const currentStudentId = selectedStudent || selectedStudentId || students[0]?.id;
   const studentQuestions = currentLobby.questions.filter(q => q.userId === currentStudentId);
   const currentStudentName = students.find(s => s.id === currentStudentId)?.name || '';
@@ -50,6 +66,12 @@ export const HostGame: React.FC = () => {
     return answer;
   };
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handleEndGame = () => {
     navigate('/results');
   };
@@ -62,7 +84,7 @@ export const HostGame: React.FC = () => {
           <div className="header-left">
             <h1>Ask Jimmy</h1>
             <div className="concept-display">
-              <span className="concept-label">Secret Concept:</span>
+              <span className="concept-label">Topic:</span>
               <span className="concept-value">{currentLobby.concept}</span>
             </div>
             {currentLobby.context && (
@@ -152,6 +174,15 @@ export const HostGame: React.FC = () => {
           <div className="stats-panel">
             <h3>Game Statistics</h3>
             <div className="stats-cards">
+              <div className="stat-card stat-card-timer">
+                <div className="stat-timer">
+                  <span className="timer-icon">⏱️</span>
+                  <span className={`timer-value ${timeRemaining < 60 ? 'timer-warning' : ''}`}>
+                    {formatTime(timeRemaining)}
+                  </span>
+                </div>
+                <div className="stat-label">Time Remaining</div>
+              </div>
               <div className="stat-card">
                 <div className="stat-number">{currentLobby.questions.length}</div>
                 <div className="stat-label">Total Questions</div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../../context/GameContext';
 import './WaitingRoom.css';
 
 export const WaitingRoom: React.FC = () => {
@@ -41,7 +41,7 @@ export const WaitingRoom: React.FC = () => {
                   <span className="player-name-large">{user.name}</span>
                   <span className="player-number-badge">#{index + 1}</span>
                 </div>
-                {user.role === 'teacher' && <div className="host-indicator">👑 Host</div>}
+                {user.role === 'host' && <div className="host-indicator">👑 Host</div>}
               </div>
             ))}
           </div>

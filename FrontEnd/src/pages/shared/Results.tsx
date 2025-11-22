@@ -1,20 +1,20 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
-import { JimmyNarwhal } from '../components/JimmyNarwhal';
+import { useGame } from '../../context/GameContext';
+import { JimmyNarwhal } from '../../components/JimmyNarwhal';
 import './Results.css';
 
 export const Results: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, currentLobby } = useGame();
+  const { currentUser, currentLobby, setCurrentUser, setCurrentLobby } = useGame();
 
   if (!currentUser || !currentLobby) {
     navigate('/');
     return null;
   }
 
-  const isTeacher = currentUser.role === 'teacher';
-  const students = currentLobby.users.filter(u => u.role === 'student');
+  const isTeacher = currentUser.role === 'host';
+  const students = currentLobby.users.filter(u => u.role === 'participant');
   
   // Calculate scores for each student
   const studentScores = students.map(student => {
@@ -24,6 +24,12 @@ export const Results: React.FC = () => {
   }).sort((a, b) => b.score - a.score);
 
   const winner = currentLobby.winner || studentScores[0];
+
+  const handleNewGame = () => {
+    setCurrentUser(null);
+    setCurrentLobby(null);
+    navigate('/');
+  };
 
   return (
     <div className="results-page">
@@ -148,7 +154,7 @@ export const Results: React.FC = () => {
             Back to Lobby
           </button>
           {isTeacher && (
-            <button onClick={() => window.location.reload()} className="secondary-action-button">
+            <button onClick={handleNewGame} className="secondary-action-button">
               New Game
             </button>
           )}

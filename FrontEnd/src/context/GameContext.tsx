@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { GameState, User, Lobby, Question, UserRole } from '../types';
+import { gameService } from '../services/gameService';
 
 interface GameContextType extends GameState {
   setCurrentUser: (user: User | null) => void;
@@ -12,65 +13,6 @@ interface GameContextType extends GameState {
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
-
-// Mock data
-const mockUsers: User[] = [
-  { id: '1', name: 'Prof. Anderson', role: 'teacher', score: 0 },
-  { id: '2', name: 'Alex', role: 'student', score: 0 },
-  { id: '3', name: 'Maria', role: 'student', score: 0 },
-  { id: '4', name: 'David', role: 'student', score: 0 },
-];
-
-const mockQuestions: Question[] = [
-  {
-    id: 'q1',
-    userId: '2',
-    userName: 'Alex',
-    question: 'Is it a biological process?',
-    answer: 'YES',
-    timestamp: Date.now() - 300000,
-  },
-  {
-    id: 'q2',
-    userId: '3',
-    userName: 'Maria',
-    question: 'Does it involve animals?',
-    answer: 'NO',
-    timestamp: Date.now() - 240000,
-  },
-  {
-    id: 'q3',
-    userId: '4',
-    userName: 'David',
-    question: 'Does it happen in plants?',
-    answer: 'YES',
-    timestamp: Date.now() - 180000,
-  },
-  {
-    id: 'q4',
-    userId: '2',
-    userName: 'Alex',
-    question: 'Does it require sunlight?',
-    answer: 'YES',
-    timestamp: Date.now() - 120000,
-  },
-  {
-    id: 'q5',
-    userId: '3',
-    userName: 'Maria',
-    question: 'Is it related to mathematics?',
-    answer: 'OUT_OF_CONTEXT',
-    timestamp: Date.now() - 90000,
-  },
-  {
-    id: 'q6',
-    userId: '4',
-    userName: 'David',
-    question: 'Does it involve water?',
-    answer: 'I_DONT_KNOW',
-    timestamp: Date.now() - 60000,
-  },
-];
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [gameState, setGameState] = useState<GameState>({
@@ -157,15 +99,6 @@ export const useGame = () => {
 
 // Mock data generator
 export const createMockLobby = (ownerId: string, ownerRole: UserRole): Lobby => {
-  return {
-    id: 'lobby-1',
-    code: 'ABC123',
-    ownerId,
-    concept: ownerRole === 'teacher' ? 'Photosynthesis' : undefined,
-    context: ownerRole === 'teacher' ? 'The process by which plants convert sunlight into energy' : undefined,
-    users: mockUsers,
-    status: 'waiting',
-    questions: ownerRole === 'teacher' ? mockQuestions : [],
-    maxQuestions: 10,
-  };
+  return gameService.createLobby(ownerId, ownerRole);
 };
+

@@ -1,4 +1,4 @@
-export type UserRole = 'teacher' | 'student';
+export type UserRole = 'host' | 'participant';
 
 export interface User {
   id: string;
@@ -22,6 +22,7 @@ export interface Lobby {
   ownerId: string;
   concept?: string;
   context?: string;
+  timeLimit?: number;
   users: User[];
   status: 'waiting' | 'playing' | 'finished';
   questions: Question[];

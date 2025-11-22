@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { GameProvider } from './context/GameContext';
-import { Lobby } from './pages/Lobby';
-import { HostSetup } from './pages/HostSetup';
-import { WaitingRoom } from './pages/WaitingRoom';
-import { ParticipantGame } from './pages/ParticipantGame';
-import { HostGame } from './pages/HostGame';
-import { Results } from './pages/Results';
+import { Lobby } from './pages/shared/Lobby';
+import { HostSetup } from './pages/host/HostSetup';
+import { WaitingRoom } from './pages/participant/WaitingRoom';
+import { ParticipantGame } from './pages/participant/ParticipantGame';
+import { HostGame } from './pages/host/HostGame';
+import { Results } from './pages/shared/Results';
 import './App.css';
 
 function App() {

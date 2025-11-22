@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
-import { JimmyNarwhal } from '../components/JimmyNarwhal';
+import { useGame } from '../../context/GameContext';
+import { JimmyNarwhal } from '../../components/JimmyNarwhal';
 import './HostSetup.css';
 
 export const HostSetup: React.FC = () => {
@@ -9,15 +9,27 @@ export const HostSetup: React.FC = () => {
   const { currentLobby, updateLobby } = useGame();
   const [concept, setConcept] = useState('');
   const [context, setContext] = useState('');
+  const [topic, setTopic] = useState('');
+  const [timeLimit, setTimeLimit] = useState('10');
 
   const handleStartGame = () => {
-    if (!concept.trim()) return;
+    if (!concept.trim() || !topic.trim() || !currentLobby) return;
 
-    updateLobby({
+    const updatedLobby = {
       concept: concept.trim(),
       context: context.trim(),
-      status: 'playing',
-    });
+      timeLimit: parseInt(timeLimit) * 60,
+      status: 'playing' as const,
+    };
+
+    updateLobby(updatedLobby);
+    
+    // Save to localStorage for participants to access
+    const lobbyData = {
+      ...currentLobby,
+      ...updatedLobby,
+    };
+    localStorage.setItem(`lobby_${currentLobby.code}`, JSON.stringify(lobbyData));
 
     navigate('/host-game');
   };
@@ -43,7 +55,20 @@ export const HostSetup: React.FC = () => {
 
         <div className="setup-form">
           <div className="form-group">
-            <label htmlFor="concept">Secret Concept *</label>
+            <label htmlFor="topic">Topic/Description *</label>
+            <input
+              id="topic"
+              type="text"
+              placeholder="e.g., The process by which plants convert sunlight into energy"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              className="setup-input"
+            />
+            <p className="input-hint">The description participants will see</p>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="concept">Secret Word *</label>
             <input
               id="concept"
               type="text"
@@ -52,20 +77,35 @@ export const HostSetup: React.FC = () => {
               onChange={(e) => setConcept(e.target.value)}
               className="setup-input"
             />
-            <p className="input-hint">The word or concept students need to guess</p>
+            <p className="input-hint">The word or concept participants need to guess</p>
           </div>
 
           <div className="form-group">
-            <label htmlFor="context">Optional Context</label>
+            <label htmlFor="context">Context/Clarification *</label>
             <textarea
               id="context"
-              placeholder="Add clarifications or hints about the concept..."
+              placeholder="Add clarifications or hints..."
               value={context}
               onChange={(e) => setContext(e.target.value)}
               className="setup-textarea"
-              rows={4}
+              rows={3}
             />
-            <p className="input-hint">Help Jimmy understand the context better</p>
+            <p className="input-hint">Additional context for the game</p>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="timeLimit">Available Time (minutes) *</label>
+            <input
+              id="timeLimit"
+              type="number"
+              min="1"
+              max="60"
+              placeholder="10"
+              value={timeLimit}
+              onChange={(e) => setTimeLimit(e.target.value)}
+              className="setup-input"
+            />
+            <p className="input-hint">Time limit for the game in minutes</p>
           </div>
 
           <div className="players-waiting">
@@ -75,7 +115,7 @@ export const HostSetup: React.FC = () => {
                 <div key={user.id} className="player-card">
                   <div className="player-avatar">{user.name[0].toUpperCase()}</div>
                   <span className="player-name">{user.name}</span>
-                  {user.role === 'teacher' && <span className="teacher-badge">Host</span>}
+                  {user.role === 'host' && <span className="teacher-badge">Host</span>}
                 </div>
               ))}
             </div>
@@ -84,7 +124,7 @@ export const HostSetup: React.FC = () => {
           <button
             onClick={handleStartGame}
             className="start-game-button"
-            disabled={!concept.trim()}
+            disabled={!concept.trim() || !topic.trim() || !context.trim() || !timeLimit}
           >
             Start Game
           </button>

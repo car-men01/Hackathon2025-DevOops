@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame, createMockLobby } from '../context/GameContext';
-import type { UserRole } from '../types';
-import { JimmyNarwhal } from '../components/JimmyNarwhal';
+import { useGame, createMockLobby } from '../../context/GameContext';
+import type { UserRole } from '../../types';
+import { JimmyNarwhal } from '../../components/JimmyNarwhal';
 import './Lobby.css';
 
 export const Lobby: React.FC = () => {
@@ -18,11 +18,15 @@ export const Lobby: React.FC = () => {
     const user = {
       id: Math.random().toString(36).substr(2, 9),
       name: name.trim(),
-      role: 'teacher' as UserRole,
+      role: 'host' as UserRole,
       score: 0,
     };
 
-    const lobby = createMockLobby(user.id, 'teacher');
+    const lobby = createMockLobby(user.id, 'host');
+    
+    // Save initial lobby to localStorage
+    localStorage.setItem(`lobby_${lobby.code}`, JSON.stringify(lobby));
+    
     setCurrentUser(user);
     setCurrentLobby(lobby);
     navigate('/host-setup');
@@ -34,15 +38,32 @@ export const Lobby: React.FC = () => {
     const user = {
       id: Math.random().toString(36).substr(2, 9),
       name: name.trim(),
-      role: 'student' as UserRole,
+      role: 'participant' as UserRole,
       score: 0,
     };
 
-    const lobby = createMockLobby('teacher-id', 'teacher');
-    lobby.code = lobbyCode.toUpperCase();
+    // Try to load lobby data from localStorage
+    const storedLobbyData = localStorage.getItem(`lobby_${lobbyCode.toUpperCase()}`);
+    let lobby;
+    
+    if (storedLobbyData) {
+      // Use stored lobby data from host
+      lobby = JSON.parse(storedLobbyData);
+    } else {
+      // Create default lobby if not found
+      lobby = createMockLobby('host-id', 'host');
+      lobby.code = lobbyCode.toUpperCase();
+    }
+    
     setCurrentUser(user);
     setCurrentLobby(lobby);
-    navigate('/waiting-room');
+    
+    // Navigate directly to game if already playing
+    if (lobby.status === 'playing') {
+      navigate('/participant-game');
+    } else {
+      navigate('/waiting-room');
+    }
   };
 
   return (

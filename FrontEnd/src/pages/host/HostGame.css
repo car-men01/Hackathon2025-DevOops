@@ -1,7 +1,8 @@
 .host-game-page {
-  min-height: 100vh;
+  height: 100vh;
   background: linear-gradient(135deg, #F0F8FF 0%, #E0F2FF 100%);
   padding: 20px;
+  overflow: hidden;
 }
 
 .host-game-layout {
@@ -10,7 +11,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  min-height: calc(100vh - 40px);
+  height: calc(100vh - 40px);
 }
 
 /* Header */
@@ -65,7 +66,7 @@
 .context-display {
   display: flex;
   gap: 10px;
-  align-items: flex-start;
+  align-items: center;
   max-width: 80%;
 }
 
@@ -75,6 +76,7 @@
   color: #696969;
   font-weight: 500;
   flex-shrink: 0;
+  align-self: center;
 }
 
 .context-value {
@@ -87,11 +89,14 @@
   border-radius: 10px;
   border: 1px solid #FFD700;
   max-height: 80px;
+  max-width: 100%;
   overflow-y: auto;
   line-height: 1.5;
-  flex: 1;
+  width: fit-content;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  display: flex;
+  align-items: center;
 }
 
 .context-value::-webkit-scrollbar {
@@ -121,8 +126,8 @@
   display: grid;
   grid-template-columns: 250px 1fr 300px;
   gap: 20px;
-  min-height: 600px;
   flex: 1;
+  overflow: hidden;
 }
 
 /* Students Sidebar */
@@ -134,8 +139,7 @@
   display: flex;
   flex-direction: column;
   border: 2px solid #E0F2FF;
-  max-height: 600px;
-  min-height: 600px;
+  height: 100%;
 }
 
 .participants-sidebar h3 {
@@ -240,8 +244,8 @@
   box-shadow: 0 4px 20px rgba(30, 144, 255, 0.1);
   display: flex;
   flex-direction: column;
-  max-height: 600px;
-  min-height: 600px;
+  height: 100%;
+  min-height: 0;
 }
 
 .conversation-header {
@@ -451,8 +455,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-height: 600px;
-  min-height: 600px;
+  height: 100%;
   overflow-y: auto;
 }
 
@@ -474,6 +477,47 @@
   border-radius: 12px;
   padding: 16px;
   text-align: center;
+}
+
+.stat-card-timer {
+  background: linear-gradient(135deg, #1E90FF, #00BFFF);
+  border: 2px solid #1E90FF;
+}
+
+.stat-timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: white;
+}
+
+.timer-icon {
+  font-size: 24px;
+  color: white;
+}
+
+.timer-value {
+  font-size: 32px;
+  color: white;
+  transition: color 0.3s ease;
+}
+
+.timer-warning {
+  color: #FF6347 !important;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .stat-number {
