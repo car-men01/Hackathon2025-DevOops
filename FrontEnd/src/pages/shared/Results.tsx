@@ -27,17 +27,10 @@ export const Results: React.FC = () => {
     // Play celebration sounds when page loads
     const playSounds = async () => {
       try {
-        // Play "Yay!" sound first
-        const yaySoundPath = '/sounds/yay.mp3'; // You'll need to add this file
+        // Play "Yay!" sound 
+        const yaySoundPath = '/sounds/yay.mp3';
         const yayAudio = new Audio(yaySoundPath);
         await yayAudio.play();
-        
-        // Wait for yay sound to finish, then play narwhal sound
-        // yayAudio.addEventListener('ended', () => {
-        //   const narwhalSoundPath = '/sounds/narwhal.mp3'; // You'll need to add this file
-        //   const narwhalAudio = new Audio(narwhalSoundPath);
-        //   narwhalAudio.play().catch(err => console.log('Narwhal sound error:', err));
-        // });
       } catch (error) {
         console.log('Sound playback error:', error);
       }
