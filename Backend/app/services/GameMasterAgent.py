@@ -1,72 +1,105 @@
 from app.services.GeminiAgent import GeminiAgent
+from app.models.lobby import Lobby
+from app.models.question import Question
 from typing import Dict, Optional
 
 class GameMasterAgent:
     """Specialized agent for the Questions game with state management."""
 
     def __init__(self):
-        self.sessions: Dict[str, dict] = {}
+        self.lobbies: Dict[str, Lobby] = {}
         self.agent = GeminiAgent()
 
-    def create_session(self, session_id: str, secret_word: str) -> dict:
-        """Create a new game session."""
-        self.sessions[session_id] = {
-            "secret_word": secret_word,
-            "questions_asked": 0,
-            "max_questions": 30,
-            "game_active": True,
-            "history": []
-        }
-        return self.sessions[session_id]
+    def create_lobby(self, lobby: Lobby) -> Lobby:
+        """Create a new lobby and add it to the lobbies dict."""
+        self.lobbies[lobby.pin] = lobby
+        return lobby
 
-    def get_session(self, session_id: str) -> Optional[dict]:
-        """Get an existing game session."""
-        return self.sessions.get(session_id)
+    def get_lobby(self, pin: str) -> Optional[Lobby]:
+        """Get an existing lobby by PIN."""
+        return self.lobbies.get(pin)
 
-    async def process_question(self, session_id: str, question: str) -> dict:
+    def get_user(self, pin: str, user_id: str) -> Optional[dict]:
         """
-        Process a question in the game.
+        Get a user with all their questions from a lobby.
+
+        Args:
+            pin: Lobby PIN
+            user_id: User ID
 
         Returns:
-            Dict with response, questions_remaining, and game_active status
+            Dict with user info and all their questions, or None if not found
         """
-        session = self.get_session(session_id)
-        if not session:
-            raise ValueError("Invalid session ID")
+        lobby = self.get_lobby(pin)
+        if not lobby:
+            return None
 
-        if not session["game_active"]:
-            return {
-                "response": "Game already ended",
-                "questions_remaining": 0,
-                "game_active": False
-            }
-
-        # Increment question count
-        session["questions_asked"] += 1
-
-        # Get response from agent
-        response = await self.agent.chat(question, session["secret_word"])
-
-        # Add to history
-        session["history"].append({
-            "question": question,
-            "response": response,
-            "question_number": session["questions_asked"]
-        })
-
-        # Check game ending conditions
-        questions_remaining = session["max_questions"] - session["questions_asked"]
-
-        if response == "CORRECT":
-            session["game_active"] = False
-            questions_remaining = 0
-        elif questions_remaining <= 0:
-            session["game_active"] = False
+        # Check if user is a participant
+        user = lobby.get_participant(user_id)
+        
+        # If not a participant, check if they're the host
+        if not user and lobby.host.user_id == user_id:
+            user = lobby.host
+        
+        if not user:
+            return None
 
         return {
+            "user_id": user.user_id,
+            "name": user.name,
+            "questions": [
+                {
+                    "question_id": q.question_id,
+                    "message": q.message,
+                    "answer": q.answer
+                }
+                for q in user.get_all_questions()
+            ]
+        }
+
+    async def process_question(self, pin: str, user_id: str, question_text: str) -> dict:
+        """
+        Process a question in the game for a specific user in a lobby.
+
+        Args:
+            pin: Lobby PIN
+            user_id: User ID of the person asking the question
+            question_text: The question text
+
+        Returns:
+            Dict with response and question details
+        """
+        lobby = self.get_lobby(pin)
+        if not lobby:
+            raise ValueError("Invalid lobby PIN")
+
+        # Get the user (participant or host)
+        user = lobby.get_participant(user_id)
+        if not user and lobby.host.user_id == user_id:
+            user = lobby.host
+        
+        if not user:
+            raise ValueError("User not found in lobby")
+
+        # Create a new question object
+        question = Question(
+            message=question_text,
+            user_id=user_id
+        )
+
+        # Get response from agent using the lobby's secret concept
+        response = await self.agent.chat(question_text, lobby.secret_concept)
+
+        # Set the answer
+        question.set_answer(response)
+
+        # Add question to user's question list
+        user.add_question(question)
+
+        return {
+            "question_id": question.question_id,
             "response": response,
-            "questions_remaining": questions_remaining,
-            "game_active": session["game_active"]
+            "message": question_text
         }
 
 
