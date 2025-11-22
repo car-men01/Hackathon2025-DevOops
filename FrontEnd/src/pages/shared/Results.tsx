@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { GameReportPdf } from './GameReportPdf'; // Import the file created above
 import './Results.css';
 
 export const Results: React.FC = () => {
@@ -222,14 +224,37 @@ export const Results: React.FC = () => {
           )}
         </div>
 
-        <div className="results-actions">
+       <div className="results-actions">
           <button onClick={() => navigate('/')} className="primary-action-button">
             Back to Lobby
           </button>
+          
           {isTeacher && (
-            <button onClick={handleNewGame} className="secondary-action-button">
-              New Game
-            </button>
+            <>
+               {/* PDF Download Button */}
+              <PDFDownloadLink
+                document={
+                  <GameReportPdf 
+                    students={studentScores} 
+                    winner={winner} 
+                    concept={currentLobby.concept || "Unknown Concept"}
+                  />
+                }
+                fileName={`game_report_${new Date().toISOString().slice(0,10)}.pdf`}
+                className="download-action-link"
+              >
+                 {/* @ts-ignore */}
+                {({ loading }) => (
+                  <button className="download-action-button" disabled={loading}>
+                    {loading ? 'Generating...' : 'Download Report'}
+                  </button>
+                )}
+              </PDFDownloadLink>
+
+              <button onClick={handleNewGame} className="secondary-action-button">
+                New Game
+              </button>
+            </>
           )}
         </div>
       </div>

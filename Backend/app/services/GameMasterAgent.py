@@ -102,6 +102,65 @@ class GameMasterAgent:
             "message": question_text
         }
 
+    def get_leaderboard(self, pin: str) -> Optional[list[dict]]:
+        """
+        Get the leaderboard for a lobby.
+        
+        Sorting logic:
+        1. Users who guessed CORRECT (sorted by total questions ascending)
+        2. Other users (sorted by number of "Yes" answers descending)
+        
+        Returns top 10 users maximum.
+
+        Args:
+            pin: Lobby PIN
+
+        Returns:
+            List of user dictionaries with name and question count, or None if lobby not found
+        """
+        lobby = self.get_lobby(pin)
+        if not lobby:
+            return None
+
+        # Collect all users (host + participants)
+        all_users = [lobby.host] + list(lobby.participants.values())
+
+        winners = []
+        others = []
+
+        for user in all_users:
+            questions = user.get_all_questions()
+            has_correct = any(q.answer == "CORRECT" for q in questions)
+            total_questions = len(questions)
+            
+            entry = {
+                "user_id": user.user_id,
+                "name": user.name,
+                "question_count": total_questions,
+                "guessed_correct": has_correct
+            }
+            
+            if has_correct:
+                winners.append(entry)
+            else:
+                yes_count = sum(1 for q in questions if q.answer == "Yes")
+                # Store tuple for sorting: (yes_count, entry)
+                others.append((yes_count, entry))
+
+        # Sort winners by total questions ascending
+        winners.sort(key=lambda x: x["question_count"])
+        
+        # Sort others by yes_count descending
+        others.sort(key=lambda x: x[0], reverse=True)
+        
+        # Extract entries from others
+        sorted_others = [x[1] for x in others]
+        
+        # Combine and take top 10
+        leaderboard = (winners + sorted_others)[:10]
+        
+        return leaderboard
+
 
 # Global instance - import this in your routes
 game_master = GameMasterAgent()
