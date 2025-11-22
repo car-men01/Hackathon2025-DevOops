@@ -63,3 +63,4 @@ htmlcov/
 # But ignore local Railway CLI config
 .railway/
 
+**/.idea
