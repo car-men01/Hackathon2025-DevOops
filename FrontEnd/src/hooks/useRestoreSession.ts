@@ -23,6 +23,16 @@ export const useRestoreSession = () => {
   const { currentUser, currentLobby, setCurrentUser, setCurrentLobby, updateLobby } = useGame();
   const isRestoringRef = useRef(false);
   const pollIntervalRef = useRef<number | null>(null);
+  
+  // Refs to hold latest state for polling
+  const currentUserRef = useRef(currentUser);
+  const currentLobbyRef = useRef(currentLobby);
+
+  // Update refs when state changes
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+    currentLobbyRef.current = currentLobby;
+  }, [currentUser, currentLobby]);
 
   useEffect(() => {
     const restoreSession = async () => {
@@ -165,37 +175,54 @@ export const useRestoreSession = () => {
 
   // Polling effect - runs when user and lobby are set
   useEffect(() => {
-    if (!currentUser || !currentLobby) {
+    const hasSession = !!currentUser && !!currentLobby;
+    
+    if (!hasSession) {
       console.log('[useRestoreSession] Skipping poll setup - no user or lobby');
+      if (pollIntervalRef.current) {
+        console.log('[useRestoreSession] 🛑 Stopping lobby polling');
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // If already polling, do nothing (this prevents restart on updates)
+    if (pollIntervalRef.current) {
       return;
     }
 
     console.log('[useRestoreSession] 🔄 Setting up lobby polling...');
 
     const pollLobbyInfo = async () => {
+      const user = currentUserRef.current;
+      const lobby = currentLobbyRef.current;
+
+      if (!user || !lobby) return;
+
       try {
         console.log('[useRestoreSession] 📡 Polling lobby info...');
-        const lobbyInfo = await gameService.getLobbyInfo(currentLobby.code, currentUser.id);
+        const lobbyInfo = await gameService.getLobbyInfo(lobby.code, user.id);
         
         // Update users list
         const users = gameService.convertParticipantsToUsers(
           lobbyInfo.participants,
           lobbyInfo.host_name,
-          currentUser.id,
-          currentUser.name,
-          currentUser.role === 'host'
+          user.id,
+          user.name,
+          user.role === 'host'
         );
 
         // Determine new status
         const newStatus = lobbyInfo.start_time ? 'playing' : 'waiting';
         
         // Check if status changed
-        if (newStatus !== currentLobby.status) {
-          console.log('[useRestoreSession] 🎮 Status changed:', currentLobby.status, '->', newStatus);
+        if (newStatus !== lobby.status) {
+          console.log('[useRestoreSession] 🎮 Status changed:', lobby.status, '->', newStatus);
           
           // Navigate if needed
           if (newStatus === 'playing') {
-            if (currentUser.role === 'host') {
+            if (user.role === 'host') {
               console.log('[useRestoreSession] 🚀 Navigating host to game...');
               navigate('/host-game');
             } else {
@@ -245,7 +272,8 @@ export const useRestoreSession = () => {
         pollIntervalRef.current = null;
       }
     };
-  }, [currentUser, currentLobby]); // Re-run when user or lobby changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!currentUser, !!currentLobby]); // Only depend on existence, not values
 
   return {
     isRestored: !!currentUser && !!currentLobby,
