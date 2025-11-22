@@ -9,7 +9,7 @@ import './HostSetup.css';
 export const HostSetup: React.FC = () => {
   console.log('[HostSetup] ========== COMPONENT RENDER ==========');
   const navigate = useNavigate();
-  const { currentUser, currentLobby, updateLobby, setCurrentLobby } = useGame();
+  const { currentUser, setCurrentUser, currentLobby, updateLobby, setCurrentLobby } = useGame();
   
   // Form State
   const [concept, setConcept] = useState('');
@@ -68,7 +68,7 @@ export const HostSetup: React.FC = () => {
     return () => clearInterval(pollInterval);
   }, [currentLobby, currentUser, lobbyCreated, updateLobby]);
 
-  const handleProceedToLobby = async () => {
+ const handleProceedToLobby = async () => {
     if (!concept.trim() || !topic.trim() || !context.trim() || !timeLimit || !currentUser) {
       setError('Please fill in all fields');
       return;
@@ -87,25 +87,47 @@ export const HostSetup: React.FC = () => {
         parseInt(timeLimit) * 60
       );
 
-      // --- NEW: QR CODE GENERATION ---
+      // ============================================================
+      // 🔴 CRITICAL FIX START: Update the Current User with the Real Host ID
+      // ============================================================
+      
+      // 1. Create the updated user object using the ID returned by the backend
+      const updatedUser = { 
+        ...currentUser, 
+        id: createResponse.hostId // This is the ID the backend expects
+      };
+
+      // 2. Update Global State
+      setCurrentUser(updatedUser);
+
+      // 3. Update Local Storage (so refreshing doesn't break the game)
+      const storedData = localStorage.getItem('gameUserData');
+      if (storedData) {
+        const parsed = JSON.parse(storedData);
+        parsed.userId = createResponse.hostId;
+        parsed.lobbyCode = createResponse.pin;
+        localStorage.setItem('gameUserData', JSON.stringify(parsed));
+      }
+      // ============================================================
+      // 🔴 CRITICAL FIX END
+      // ============================================================
+
+      // --- QR CODE GENERATION ---
       try {
-        // Construct the URL: current website origin + query param
         const origin = window.location.origin; 
         const joinLink = `${origin}/?pin=${createResponse.pin}`;
-        
-        console.log('[HostSetup] Generating QR for link:', joinLink);
         const qrData = await gameService.generateQRCode(joinLink);
         setQrCodeUrl(qrData);
       } catch (qrErr) {
         console.error('Failed to generate QR code', qrErr);
-        // Don't block the flow if QR fails
       }
-      // -------------------------------
+      // --------------------------
 
       const newLobby: LobbyType = {
         code: createResponse.pin,
         ownerId: createResponse.hostId,
-        users: [{ ...currentUser, id: createResponse.hostId }],
+        // Use updatedUser here to ensure consistency
+        users: [{ ...updatedUser, role: 'host' }], 
         status: 'waiting',
         questions: [],
         maxQuestions: 10,
@@ -200,7 +222,7 @@ export const HostSetup: React.FC = () => {
               <input
                 id="topic"
                 type="text"
-                placeholder="e.g., The process by which plants convert sunlight into energy"
+                placeholder="e.g., Biology"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 className="setup-input"
@@ -214,7 +236,7 @@ export const HostSetup: React.FC = () => {
               <input
                 id="concept"
                 type="text"
-                placeholder="e.g., Photosynthesis, French Revolution..."
+                placeholder="e.g., Photosynthesis"
                 value={concept}
                 onChange={(e) => setConcept(e.target.value)}
                 className="setup-input"
