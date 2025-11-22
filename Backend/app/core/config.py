@@ -10,7 +10,7 @@ ENV_FILE = BASE_DIR / ".env"
 
 class Settings(BaseSettings):
     # Project Info
-    PROJECT_NAME: str = "20 Questions Game API"
+    PROJECT_NAME: str = "Questions Game API"
     VERSION: str = "1.0.0"
     DESCRIPTION: str = "Backend API for Questions Game with Gemini AI"
     API_V1_STR: str = "/api/v1"

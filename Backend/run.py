@@ -6,7 +6,7 @@ import uvicorn
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🚀 Starting 20 Questions Game API")
+    print("🚀 Starting Questions Game API")
     print("=" * 60)
     print("\n📍 Server will be available at:")
     print("   http://localhost:8000")

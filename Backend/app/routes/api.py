@@ -7,7 +7,8 @@ from app.schemas.game import (
     ChatRequest,
     ChatResponse
 )
-from app.services.gemini_service import game_master, GeminiAgent
+from app.services.GeminiAgent import GeminiAgent
+from app.services.GameMasterAgent import GameMasterAgent
 import uuid
 import logging
 
@@ -19,13 +20,13 @@ router = APIRouter()
 @router.post("/game/start", response_model=GameSession)
 async def start_game(game_data: GameStart):
     """
-    Start a new 20 Questions game session.
+    Start a new Questions game session.
 
     The Game Master will know the secret word and respond to questions.
     """
     try:
         session_id = str(uuid.uuid4())
-        session = game_master.create_session(session_id, game_data.secret_word)
+        session = GameMasterAgent.create_session(session_id, game_data.secret_word)
 
         return GameSession(
             session_id=session_id,
@@ -52,7 +53,7 @@ async def ask_question(session_id: str, question: GameQuestion):
     - CORRECT (if you guessed the word)
     """
     try:
-        result = await game_master.process_question(session_id, question.question)
+        result = await GameMasterAgent.process_question(session_id, question.question)
 
         return GameResponse(
             response=result["response"],
@@ -69,7 +70,7 @@ async def ask_question(session_id: str, question: GameQuestion):
 async def get_game_session(session_id: str):
     """Get the current state of a game session."""
     try:
-        session = game_master.get_session(session_id)
+        session = GameMasterAgent.get_session(session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
 
