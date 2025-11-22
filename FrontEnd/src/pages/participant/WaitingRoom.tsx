@@ -73,7 +73,12 @@ export const WaitingRoom: React.FC = () => {
           </div>
         </div>
 
-        <button onClick={() => navigate('/')} className="leave-button">
+        <button onClick={() => {
+          console.log('[WaitingRoom] 🚪 Leaving lobby...');
+          localStorage.removeItem('gameUserData');
+          console.log('[WaitingRoom] ✅ LocalStorage cleared');
+          navigate('/');
+        }} className="end-game-button">
           Leave Lobby
         </button>
       </div>

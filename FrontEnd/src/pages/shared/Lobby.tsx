@@ -59,6 +59,18 @@ export const Lobby: React.FC = () => {
         score: 0,
       };
 
+      // Save to localStorage
+      const userStorageData = {
+        userId: user.id,
+        userName: user.name,
+        userType: 'host',
+        lobbyCode: createResponse.pin,
+        path: window.location.pathname,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('gameUserData', JSON.stringify(userStorageData));
+      console.log('[Lobby] ✅ Host data saved to localStorage:', userStorageData);
+
       setCurrentUser(user);
       
       const lobby: LobbyType = {
@@ -72,9 +84,11 @@ export const Lobby: React.FC = () => {
       
       setCurrentLobby(lobby);
       navigate('/host-setup');
-    } catch (err: any) {
-      console.error('[Lobby] Error creating lobby:', err);
-      setError(err.message || 'Failed to create lobby');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error('[Lobby] Error creating lobby:', err);
+        setError(err.message || 'Failed to create lobby');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -99,6 +113,18 @@ export const Lobby: React.FC = () => {
         score: 0,
       };
 
+      // Save to localStorage
+      const userStorageData = {
+        userId: user.id,
+        userName: user.name,
+        userType: 'participant',
+        lobbyCode: response.pin,
+        path: window.location.pathname,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('gameUserData', JSON.stringify(userStorageData));
+      console.log('[Lobby] ✅ Participant data saved to localStorage:', userStorageData);
+
       const users = gameService.convertParticipantsToUsers(
         response.participants,
         response.host_name,
@@ -119,8 +145,10 @@ export const Lobby: React.FC = () => {
       setCurrentUser(user);
       setCurrentLobby(lobby);
       navigate('/waiting-room');
-    } catch (err: any) {
-      setError(err.message || 'Failed to join lobby');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to join lobby');
+      }
     } finally {
       setIsLoading(false);
     }

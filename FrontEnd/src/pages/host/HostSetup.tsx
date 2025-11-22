@@ -176,6 +176,13 @@ export const HostSetup: React.FC = () => {
     }
   };
 
+  const handleLeaveLobby = () => {
+    console.log('[HostSetup] 🚪 Leaving lobby...');
+    localStorage.removeItem('gameUserData');
+    console.log('[HostSetup] ✅ LocalStorage cleared');
+    navigate('/');
+  };
+
   if (!currentLobby || !currentUser) {
     navigate('/');
     return null;
@@ -189,6 +196,9 @@ export const HostSetup: React.FC = () => {
           <p className="lobby-code">
             Lobby Code: <span>{currentLobby.code}</span>
           </p>
+          <button onClick={handleLeaveLobby} className="end-game-button">
+            Leave Lobby
+          </button>
         </div>
 
         <div className="setup-mascot">
