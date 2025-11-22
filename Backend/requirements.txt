@@ -14,3 +14,8 @@ google-generativeai>=0.8.0
 # Additional utilities
 python-multipart>=0.0.6
 httpx>=0.25.0
+
+# QR Code generation
+qrcode[pil]>=7.4.2
+Pillow>=10.0.0
+
