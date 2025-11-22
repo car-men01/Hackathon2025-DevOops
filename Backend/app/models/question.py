@@ -9,7 +9,6 @@ class Question:
         self.question_id = question_id or str(uuid.uuid4())
         self.message = message
         self.answer = answer
-        self.user_id = user_id
     
     def set_answer(self, answer: str) -> None:
         """Set the answer for this question."""

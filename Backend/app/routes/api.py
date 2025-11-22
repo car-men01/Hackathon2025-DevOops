@@ -129,13 +129,9 @@ async def start_lobby(lobby_start: LobbyStart):
         if lobby.host.user_id != lobby_start.host_id:
             raise HTTPException(status_code=403, detail="Only the host can start the lobby")
         
-        # Create a session with the Lobby Master
-        session_id = str(uuid.uuid4())
-        session = lobby_master.create_session(session_id, lobby.secret_concept)
-        
         # Start lobby using Lobby method
         try:
-            lobby.start(session_id)
+            lobby.start()
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         
@@ -143,7 +139,6 @@ async def start_lobby(lobby_start: LobbyStart):
         
         return LobbyStartResponse(
             pin=lobby.pin,
-            session_id=session_id,
             lobby_started=True,
             participants=lobby.get_participant_names()
         )
@@ -226,7 +221,7 @@ async def reconnect_user(reconnect_data: UserReconnect):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/session/{session_id}/question", response_model=LobbyResponse)
+@router.post("/lobby/{session_id}/question", response_model=LobbyResponse)
 async def ask_question(session_id: str, question: LobbyQuestion):
     """
     Ask a question in an active lobby session.
@@ -251,28 +246,7 @@ async def ask_question(session_id: str, question: LobbyQuestion):
     except Exception as e:
         logger.error(f"Error processing question: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/session/{session_id}", response_model=LobbySession)
-async def get_session_info(session_id: str):
-    """Get the current state of a lobby session."""
-    try:
-        session = GameMasterAgent.get_session(session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
-
-        return LobbySession(
-            session_id=session_id,
-            questions_asked=session["questions_asked"],
-            lobby_active=session["lobby_active"],
-            history=session["history"]
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting session: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
+    
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_with_gemini(chat_request: ChatRequest):
@@ -298,4 +272,3 @@ async def chat_with_gemini(chat_request: ChatRequest):
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "gemini-api"}
-
