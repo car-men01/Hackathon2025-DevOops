@@ -2,13 +2,8 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #F0F8FF 0%, #E0F2FF 100%);
   padding: 20px;
+  overflow-x: auto;
   overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.host-game-page::-webkit-scrollbar {
-  display: none;
 }
 
 .host-game-layout {
