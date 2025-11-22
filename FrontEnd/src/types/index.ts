@@ -75,6 +75,7 @@ export interface StartLobbyRequest {
   context?: string;
   topic?: string;
   time_limit?: number;
+  start_time?: string;
 }
 
 export interface StartLobbyResponse {

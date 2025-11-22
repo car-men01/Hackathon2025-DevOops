@@ -22,6 +22,7 @@ from app.models.user import User
 import uuid
 import logging
 from typing import Dict
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -162,9 +163,19 @@ async def start_lobby(lobby_start: LobbyStart):
             lobby.timelimit = lobby_start.time_limit
             logger.info(f"[START_LOBBY] Updated time_limit: {lobby_start.time_limit}")
         
+        # Parse start_time if provided
+        start_dt = None
+        if lobby_start.start_time:
+            try:
+                # Handle ISO format with Z or offset
+                start_dt = datetime.fromisoformat(lobby_start.start_time.replace('Z', '+00:00'))
+                logger.info(f"[START_LOBBY] Using provided start_time: {start_dt}")
+            except ValueError:
+                logger.warning(f"[START_LOBBY] Invalid start_time format: {lobby_start.start_time}, using current time")
+
         # Start lobby using Lobby method
         try:
-            lobby.start()
+            lobby.start(start_time=start_dt)
             logger.info(f"[START_LOBBY] Lobby started successfully: {lobby_start.pin}")
         except ValueError as e:
             logger.error(f"[START_LOBBY] Error starting lobby: {str(e)}")

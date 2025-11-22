@@ -42,10 +42,10 @@ class Lobby:
         """Get a participant by user_id."""
         return self.participants.get(user_id)
     
-    def start(self) -> None:
+    def start(self, start_time: Optional[datetime] = None) -> None:
         """Start the lobby."""
         if self.start_time is not None:
             raise ValueError("Lobby has already started")
         if len(self.participants) == 0:
             raise ValueError("Cannot start lobby without participants")
-        self.start_time = datetime.now()
+        self.start_time = start_time if start_time else datetime.now()
