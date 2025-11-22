@@ -97,6 +97,20 @@ class LobbyDeleteResponse(BaseModel):
     message: str = Field(..., description="Confirmation message")
 
 
+class LeaderboardEntry(BaseModel):
+    """Schema for a single leaderboard entry."""
+    user_id: str
+    name: str
+    question_count: int
+    guessed_correct: bool
+
+
+class LeaderboardResponse(BaseModel):
+    """Schema for leaderboard response."""
+    pin: str
+    leaderboard: List[LeaderboardEntry] = Field(..., description="Top 10 users sorted by question count")
+
+
 class LobbySession(BaseModel):
     """Schema for lobby session information."""
     session_id: str
