@@ -82,6 +82,7 @@ class LobbyStart(BaseModel):
     context: Optional[str] = Field(None, description="Optional update to additional context")
     topic: Optional[str] = Field(None, description="Optional update to topic/description")
     time_limit: Optional[int] = Field(None, description="Optional update to time limit in seconds")
+    start_time: Optional[str] = Field(None, description="Optional start time provided by host")
 
 
 class LobbyStartResponse(BaseModel):
