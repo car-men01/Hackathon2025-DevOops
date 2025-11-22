@@ -12,7 +12,8 @@ from app.schemas.lobby import (
     LobbyStartResponse,
     LobbyInfo,
     UserReconnect,
-    UserReconnectResponse
+    UserReconnectResponse,
+    LobbyDeleteResponse
 )
 from app.services.GeminiAgent import GeminiAgent
 from app.services.GameMasterAgent import game_master
@@ -145,6 +146,33 @@ async def start_lobby(lobby_start: LobbyStart):
         raise
     except Exception as e:
         logger.error(f"Error starting lobby: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/lobby/{pin}", response_model=LobbyDeleteResponse)
+async def delete_lobby(pin: str):
+    """
+    Delete a lobby and all its data (users and questions).
+    """
+    try:
+        lobby = game_master.get_lobby(pin)
+        
+        if not lobby:
+            raise HTTPException(status_code=404, detail="Lobby not found with that PIN")
+        
+        # Delete the lobby from game_master
+        del game_master.lobbies[pin]
+        
+        logger.info(f"Lobby deleted {pin}")
+        
+        return LobbyDeleteResponse(
+            pin=pin,
+            message="Lobby and all associated data deleted successfully"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting lobby: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

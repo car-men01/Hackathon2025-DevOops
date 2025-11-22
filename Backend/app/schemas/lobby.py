@@ -87,6 +87,12 @@ class LobbyStartResponse(BaseModel):
     participants: List[str]
 
 
+class LobbyDeleteResponse(BaseModel):
+    """Schema for lobby deletion response."""
+    pin: str
+    message: str = Field(..., description="Confirmation message")
+
+
 class LobbySession(BaseModel):
     """Schema for lobby session information."""
     session_id: str
