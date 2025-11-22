@@ -207,46 +207,23 @@
   width: 100%;
 }
 
-.narwhal-sprite-container {
+.narwhal-animated {
   width: 180px;
   height: 180px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  object-fit: contain;
+  animation: smoothPulse 4s ease-in-out infinite;
+  transition: opacity 0.2s ease-in-out;
 }
 
-.narwhal-sprite {
-  width: 200px;
-  height: 200px;
-  background-image: url('/narwal_animations.jpg');
-  background-size: 400% 300%;
-  animation: narwhalCycle 6s steps(1) infinite, narwhalScale 0.5s ease-in-out infinite;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-}
-
-@keyframes narwhalCycle {
-  0% { background-position: 0% 0%; }
-  8.33% { background-position: 25% 0%; }
-  16.66% { background-position: 50% 0%; }
-  25% { background-position: 75% 0%; }
-  33.33% { background-position: 0% 33.33%; }
-  41.66% { background-position: 25% 33.33%; }
-  50% { background-position: 50% 33.33%; }
-  58.33% { background-position: 75% 33.33%; }
-  66.66% { background-position: 0% 66.66%; }
-  75% { background-position: 25% 66.66%; }
-  83.33% { background-position: 50% 66.66%; }
-  91.66% { background-position: 75% 66.66%; }
-  100% { background-position: 0% 0%; }
-}
-
-@keyframes narwhalScale {
-  0%, 100% {
+@keyframes smoothPulse {
+  0% {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.1);
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 

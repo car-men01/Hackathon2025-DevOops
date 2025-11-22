@@ -82,10 +82,21 @@ export const HostGame: React.FC = () => {
         {/* Header */}
         <div className="host-header">
           <div className="header-left">
-            <h1>Ask Jimmy</h1>
-            <div className="concept-display">
-              <span className="concept-label">Topic:</span>
-              <span className="concept-value">{currentLobby.concept}</span>
+            <div className="header-top-row">
+              <h1>Ask Jimmy</h1>
+              <button onClick={handleEndGame} className="end-game-button">
+                End Game
+              </button>
+            </div>
+            <div className="header-info-row">
+              <div className="secret-word-display">
+                <span className="secret-word-label">Secret Word:</span>
+                <span className="secret-word-value">{currentLobby.concept}</span>
+              </div>
+              <div className="concept-display">
+                <span className="concept-label">Topic:</span>
+                <span className="concept-value">{currentLobby.topic || 'Not set'}</span>
+              </div>
             </div>
             {currentLobby.context && (
               <div className="context-display">
@@ -94,9 +105,6 @@ export const HostGame: React.FC = () => {
               </div>
             )}
           </div>
-          <button onClick={handleEndGame} className="end-game-button">
-            End Game
-          </button>
         </div>
 
         {/* Main Content */}
@@ -108,19 +116,19 @@ export const HostGame: React.FC = () => {
               {students.map((student) => {
                 const studentQCount = currentLobby.questions.filter(q => q.userId === student.id).length;
                 return (
-                  <button
+                  <div
                     key={student.id}
                     onClick={() => handleStudentSelect(student.id)}
-                    className={`participant-selector-button ${currentStudentId === student.id ? 'active' : ''}`}
+                    className={`participant-item-host ${currentStudentId === student.id ? 'active' : ''}`}
                   >
-                    <div className="participant-avatar-small">
+                    <div className="participant-avatar-host">
                       {student.name[0].toUpperCase()}
                     </div>
-                    <div className="participant-selector-info">
-                      <span className="participant-selector-name">{student.name}</span>
-                      <span className="participant-question-count">{studentQCount} questions</span>
+                    <div className="participant-info-host">
+                      <div className="participant-name-host">{student.name}</div>
+                      <div className="participant-question-count-host">{studentQCount} questions</div>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>

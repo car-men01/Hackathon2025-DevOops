@@ -5,6 +5,8 @@ export interface User {
   name: string;
   role: UserRole;
   score: number;
+  questionsUsed?: number;
+  timeElapsed?: number;
 }
 
 export interface Question {
@@ -20,6 +22,7 @@ export interface LobbyType {
   id?: string;
   code: string;
   ownerId: string;
+  topic?: string;
   concept?: string;
   context?: string;
   timeLimit?: number;
