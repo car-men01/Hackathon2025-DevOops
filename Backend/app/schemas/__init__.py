@@ -1,18 +1,18 @@
 
-from .game import (
-    GameQuestion,
-    GameResponse,
-    GameStart,
-    GameSession,
+from .lobby import (
+    LobbyQuestion,
+    LobbyResponse,
+    LobbyStart,
+    LobbySession,
     ChatRequest,
     ChatResponse
 )
 
 __all__ = [
-    "GameQuestion",
-    "GameResponse",
-    "GameStart",
-    "GameSession",
+    "LobbyQuestion",
+    "LobbyResponse",
+    "LobbyStart",
+    "LobbySession",
     "ChatRequest",
     "ChatResponse"
 ]
