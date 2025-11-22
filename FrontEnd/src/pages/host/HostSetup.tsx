@@ -4,6 +4,7 @@ import { useGame } from '../../context/GameContext';
 import { gameService } from '../../services';
 import { JimmyNarwhal } from '../../components/JimmyNarwhal';
 import type { LobbyType } from '../../types';
+import { INPUT_LIMITS } from '../../constants/settings';
 import './HostSetup.css';
 
 export const HostSetup: React.FC = () => {
@@ -222,9 +223,9 @@ export const HostSetup: React.FC = () => {
             <input
               id="topic"
               type="text"
-              placeholder="e.g., The process by which plants convert sunlight into energy"
+              placeholder={`e.g., The process by which plants convert sunlight into energy (max ${INPUT_LIMITS.TOPIC} chars)`}
               value={topic}
-              onChange={(e) => setTopic(e.target.value)}
+              onChange={(e) => setTopic(e.target.value.slice(0, INPUT_LIMITS.TOPIC))}
               className="setup-input"
               disabled={isLoading}
             />
@@ -236,9 +237,9 @@ export const HostSetup: React.FC = () => {
             <input
               id="concept"
               type="text"
-              placeholder="e.g., Photosynthesis, French Revolution..."
+              placeholder={`e.g., Photosynthesis, French Revolution... (max ${INPUT_LIMITS.CONCEPT} chars)`}
               value={concept}
-              onChange={(e) => setConcept(e.target.value)}
+              onChange={(e) => setConcept(e.target.value.slice(0, INPUT_LIMITS.CONCEPT))}
               className="setup-input"
               disabled={isLoading}
             />
@@ -249,9 +250,9 @@ export const HostSetup: React.FC = () => {
             <label htmlFor="context">Context/Clarification *</label>
             <textarea
               id="context"
-              placeholder="Add clarifications or hints..."
+              placeholder={`Add clarifications or hints... (max ${INPUT_LIMITS.CONTEXT} chars)`}
               value={context}
-              onChange={(e) => setContext(e.target.value)}
+              onChange={(e) => setContext(e.target.value.slice(0, INPUT_LIMITS.CONTEXT))}
               className="setup-textarea"
               rows={3}
               disabled={isLoading}
@@ -268,7 +269,7 @@ export const HostSetup: React.FC = () => {
               max="60"
               placeholder="10"
               value={timeLimit}
-              onChange={(e) => setTimeLimit(e.target.value)}
+              onChange={(e) => setTimeLimit(e.target.value.slice(0, INPUT_LIMITS.TIME_LIMIT))}
               className="setup-input"
               disabled={isLoading}
             />
