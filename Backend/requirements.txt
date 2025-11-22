@@ -1,0 +1,21 @@
+fastapi~=0.121.3
+uvicorn[standard]>=0.30.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+alembic>=1.13.0
+python-dotenv>=1.0.0
+# LangChain and Gemini (Updated to latest compatible versions)
+langchain>=0.3.0
+langchain-google-genai>=2.0.0
+langchain-core>=0.3.0
+google-generativeai>=0.8.0
+# Additional utilities
+python-multipart>=0.0.6
+httpx>=0.25.0
+
+# QR Code generation
+qrcode[pil]>=7.4.2
+Pillow>=10.0.0
+
