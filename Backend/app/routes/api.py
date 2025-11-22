@@ -271,3 +271,66 @@ async def chat_with_gemini(chat_request: ChatRequest):
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "gemini-api"}
+
+
+@router.post("/qr/generate")
+async def generate_qr_code(link: str):
+    """
+    Generate a QR code from a link and return as base64 data URL.
+
+    Args:
+        link: The URL/link to encode in the QR code
+
+    Returns:
+        JSON with data_url (ready for HTML img src)
+    """
+    try:
+        from app.services.QRService import QRService
+
+        logger.info(f"Generating QR code for link: {link}")
+
+        # Generate QR code as data URL (ready for frontend)
+        data_url = QRService.generate_qr_code_data_url(link)
+
+        return {
+            "success": True,
+            "link": link,
+            "qr_code_data_url": data_url,
+            "message": "QR code generated successfully"
+        }
+
+    except Exception as e:
+        logger.error(f"Error generating QR code: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/qr/generate-base64")
+async def generate_qr_code_base64(link: str):
+    """
+    Generate a QR code from a link and return as base64 string.
+
+    Args:
+        link: The URL/link to encode in the QR code
+
+    Returns:
+        JSON with base64 encoded image
+    """
+    try:
+        from app.services.QRService import QRService
+
+        logger.info(f"Generating QR code (base64) for link: {link}")
+
+        # Generate QR code as base64
+        base64_image = QRService.generate_qr_code_base64(link)
+
+        return {
+            "success": True,
+            "link": link,
+            "qr_code_base64": base64_image,
+            "message": "QR code generated successfully"
+        }
+
+    except Exception as e:
+        logger.error(f"Error generating QR code: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
