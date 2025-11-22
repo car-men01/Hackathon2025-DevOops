@@ -59,6 +59,18 @@ export const Lobby: React.FC = () => {
         score: 0,
       };
 
+      // Save to localStorage
+      const userStorageData = {
+        userId: user.id,
+        userName: user.name,
+        userType: 'host',
+        lobbyCode: createResponse.pin,
+        path: window.location.pathname,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('gameUserData', JSON.stringify(userStorageData));
+      console.log('[Lobby] ✅ Host data saved to localStorage:', userStorageData);
+
       setCurrentUser(user);
       
       const lobby: LobbyType = {
@@ -98,6 +110,18 @@ export const Lobby: React.FC = () => {
         role: 'participant' as UserRole,
         score: 0,
       };
+
+      // Save to localStorage
+      const userStorageData = {
+        userId: user.id,
+        userName: user.name,
+        userType: 'participant',
+        lobbyCode: response.pin,
+        path: window.location.pathname,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('gameUserData', JSON.stringify(userStorageData));
+      console.log('[Lobby] ✅ Participant data saved to localStorage:', userStorageData);
 
       const users = gameService.convertParticipantsToUsers(
         response.participants,
