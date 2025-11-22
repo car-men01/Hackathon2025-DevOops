@@ -2,7 +2,8 @@
   height: 100vh;
   background: linear-gradient(135deg, #F0F8FF 0%, #E0F2FF 100%);
   padding: 20px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
 .participant-game-layout {
