@@ -480,3 +480,38 @@
 .secondary-action-button:hover {
   background: #F0F8FF;
 }
+
+/* Add to Results.css */
+
+.download-action-link {
+  flex: 1;
+  text-decoration: none;
+}
+
+.download-action-button {
+  width: 100%;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  padding: 18px;
+  border: none;
+  border-radius: 16px;
+  background: #00C853; /* A nice success green */
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 200, 83, 0.3);
+}
+
+.download-action-button:hover {
+  background: #009624;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 200, 83, 0.4);
+}
+
+.download-action-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}

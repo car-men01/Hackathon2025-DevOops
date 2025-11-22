@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
-import { gameService } from '../../services';
+import { gameService } from '../../services/gameService'; // Ensure path matches your export
 import { JimmyNarwhal } from '../../components/JimmyNarwhal';
 import type { LobbyType } from '../../types';
 import { INPUT_LIMITS } from '../../constants/settings';
@@ -11,13 +11,21 @@ export const HostSetup: React.FC = () => {
   console.log('[HostSetup] ========== COMPONENT RENDER ==========');
   const navigate = useNavigate();
   const { currentUser, currentLobby, updateLobby, setCurrentLobby } = useGame();
+  
+  // Form State
   const [concept, setConcept] = useState('');
   const [context, setContext] = useState('');
   const [topic, setTopic] = useState('');
   const [timeLimit, setTimeLimit] = useState('10');
+  
+  // UI State
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [lobbyCreated, setLobbyCreated] = useState(false);
+  const [showLobbyView, setShowLobbyView] = useState(false);
+  
+  // NEW: QR Code State
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
   // Debug: Log current lobby state
   useEffect(() => {
@@ -33,23 +41,13 @@ export const HostSetup: React.FC = () => {
 
   // Poll for participants joining
   useEffect(() => {
-    if (!currentLobby || !currentUser || lobbyCreated) {
-      console.log('[HostSetup] Skipping poll:', {
-        hasLobby: !!currentLobby,
-        hasUser: !!currentUser,
-        code: currentLobby?.code,
-        lobbyCreated
-      });
+    if (!currentLobby || !currentUser || !lobbyCreated) {
       return;
     }
 
-    console.log('[HostSetup] Starting participant polling for lobby:', currentLobby.code);
-
     const pollInterval = setInterval(async () => {
       try {
-        console.log('[HostSetup] Polling lobby info for:', currentLobby.code);
         const lobbyInfo = await gameService.getLobbyInfo(currentLobby.code, currentUser.id);
-        console.log('[HostSetup] Received lobby info:', lobbyInfo);
         
         const users = gameService.convertParticipantsToUsers(
           lobbyInfo.participants,
@@ -58,7 +56,6 @@ export const HostSetup: React.FC = () => {
           currentUser.name,
           true
         );
-        console.log('[HostSetup] Converted users:', users);
 
         updateLobby({ 
           users,
@@ -67,109 +64,102 @@ export const HostSetup: React.FC = () => {
       } catch (err) {
         console.error('[HostSetup] Error polling lobby info:', err);
       }
-    }, 2000); // Poll every 2 seconds
+    }, 2000);
 
     return () => clearInterval(pollInterval);
   }, [currentLobby, currentUser, lobbyCreated, updateLobby]);
 
-  const handleStartGame = async () => {
-    console.log('[HostSetup] handleStartGame called - START');
-    console.log('[HostSetup] Validation check:', {
-      concept: concept.trim(),
-      topic: topic.trim(),
-      hasLobby: !!currentLobby,
-      hasUser: !!currentUser,
-      lobbyCode: currentLobby?.code
-    });
-
-    if (!concept.trim() || !topic.trim() || !currentLobby || !currentUser) {
-      console.log('[HostSetup] Validation failed, returning early');
+  const handleProceedToLobby = async () => {
+    if (!concept.trim() || !topic.trim() || !context.trim() || !timeLimit || !currentUser) {
+      setError('Please fill in all fields');
       return;
     }
 
-    console.log('[HostSetup] handleStartGame validation passed, proceeding...');
-
-    console.log('[HostSetup] Setting isLoading to true');
     setIsLoading(true);
     setError('');
 
     try {
-      console.log('[HostSetup] Checking lobby code:', currentLobby.code);
-      // If lobby not yet created on backend, create it first
-      if (currentLobby.code === 'TEMP') {
-        console.log('[HostSetup] Creating lobby on backend...');
-        console.log('[HostSetup] Calling gameService.createLobby with:', {
-          hostName: currentUser.name,
-          secretConcept: concept.trim(),
-          context: context.trim(),
-          topic: topic.trim(),
-          timeLimit: parseInt(timeLimit) * 60
-        });
-        
-        const createResponse = await gameService.createLobby(
-          currentUser.name,
-          concept.trim(),
-          context.trim(),
-          topic.trim(),
-          parseInt(timeLimit) * 60
-        );
-        console.log('[HostSetup] Lobby created, response:', createResponse);
+      console.log('[HostSetup] Creating lobby on backend...');
+      const createResponse = await gameService.createLobby(
+        currentUser.name,
+        concept.trim(),
+        context.trim(),
+        topic.trim(),
+        parseInt(timeLimit) * 60
+      );
 
-        const newLobby: LobbyType = {
-          code: createResponse.pin,
-          ownerId: createResponse.hostId,
-          users: [{ ...currentUser, id: createResponse.hostId }],
-          status: 'waiting',
-          questions: [],
-          maxQuestions: 10,
-          concept: concept.trim(),
-          context: context.trim(),
-          topic: topic.trim(),
-          timeLimit: parseInt(timeLimit) * 60,
-        };
-
-        console.log('[HostSetup] Setting new lobby:', newLobby);
-        setCurrentLobby(newLobby);
-        setLobbyCreated(true);
-        console.log('[HostSetup] Lobby created flag set to true');
+      // --- NEW: QR CODE GENERATION ---
+      try {
+        // Construct the URL: current website origin + query param
+        const origin = window.location.origin; 
+        const joinLink = `${origin}/?pin=${createResponse.pin}`;
         
-        // Wait a moment for state to update
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Now start the lobby
-        console.log('[HostSetup] Starting lobby:', createResponse.pin);
-        await gameService.startLobby(createResponse.pin, createResponse.hostId);
-        console.log('[HostSetup] Lobby started successfully');
-        
-        // Navigate immediately after starting (no need to wait for state update)
-        navigate(`/host/game/${currentLobby.code}`);
-        console.log('[HostSetup] Navigating to host-game');
-        navigate('/host-game');
-      } else {
-        // Lobby already exists, just start it
-        console.log('[HostSetup] Lobby already exists, starting:', currentLobby.code);
-        await gameService.startLobby(
-          currentLobby.code, 
-          currentUser.id,
-          concept.trim(),
-          context.trim(),
-          topic.trim(),
-          parseInt(timeLimit) * 60
-        );
-        console.log('[HostSetup] Lobby started successfully');
-        
-        updateLobby({ 
-          status: 'playing',
-          concept: concept.trim(),
-          context: context.trim(),
-          topic: topic.trim(),
-          timeLimit: parseInt(timeLimit) * 60,
-        });
-        console.log('[HostSetup] Navigating to host-game');
-        navigate('/host-game');
+        console.log('[HostSetup] Generating QR for link:', joinLink);
+        const qrData = await gameService.generateQRCode(joinLink);
+        setQrCodeUrl(qrData);
+      } catch (qrErr) {
+        console.error('Failed to generate QR code', qrErr);
+        // Don't block the flow if QR fails
       }
+      // -------------------------------
+
+      const newLobby: LobbyType = {
+        code: createResponse.pin,
+        ownerId: createResponse.hostId,
+        users: [{ ...currentUser, id: createResponse.hostId }],
+        status: 'waiting',
+        questions: [],
+        maxQuestions: 10,
+        concept: concept.trim(),
+        context: context.trim(),
+        topic: topic.trim(),
+        timeLimit: parseInt(timeLimit) * 60,
+      };
+
+      setCurrentLobby(newLobby);
+      setLobbyCreated(true);
+      setShowLobbyView(true);
     } catch (err: unknown) {
-      console.error('[HostSetup] Error in handleStartGame:', err);
+      console.error('[HostSetup] Error creating lobby:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create lobby';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToFields = () => {
+    setShowLobbyView(false);
+  };
+
+  const handleStartGame = async () => {
+    if (!currentLobby || !currentUser || currentLobby.code === 'TEMP') {
+      setError('Please create lobby first');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await gameService.startLobby(
+        currentLobby.code, 
+        currentUser.id,
+        concept.trim(),
+        context.trim(),
+        topic.trim(),
+        parseInt(timeLimit) * 60
+      );
+      
+      updateLobby({ 
+        status: 'playing',
+        concept: concept.trim(),
+        context: context.trim(),
+        topic: topic.trim(),
+        timeLimit: parseInt(timeLimit) * 60,
+      });
+      navigate('/host-game');
+    } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to start game';
       setError(errorMessage);
     } finally {
@@ -189,7 +179,6 @@ export const HostSetup: React.FC = () => {
       console.error('[HostSetup] Error deleting lobby:', error);
     }
     localStorage.removeItem('gameUserData');
-    console.log('[HostSetup] ✅ LocalStorage cleared');
     navigate('/');
   };
 
@@ -203,107 +192,146 @@ export const HostSetup: React.FC = () => {
       <div className="host-setup-container">
         <div className="setup-header">
           <h1>Setup Your Game</h1>
-          <p className="lobby-code">
-            Lobby Code: <span>{currentLobby.code}</span>
-          </p>
-          <button onClick={handleLeaveLobby} className="end-game-button">
-            Leave Lobby
-          </button>
+          {showLobbyView && (
+            <p className="lobby-code">
+              Lobby Code: <span>{currentLobby.code}</span>
+            </p>
+          )}
         </div>
 
         <div className="setup-mascot">
           <JimmyNarwhal state="waiting" />
         </div>
 
-        <div className="setup-form">
-          {error && <div className="error-message" style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
-          
-          <div className="form-group">
-            <label htmlFor="topic">Topic/Description *</label>
-            <input
-              id="topic"
-              type="text"
-              placeholder={`e.g., The process by which plants convert sunlight into energy (max ${INPUT_LIMITS.TOPIC} chars)`}
-              value={topic}
-              onChange={(e) => setTopic(e.target.value.slice(0, INPUT_LIMITS.TOPIC))}
-              className="setup-input"
-              disabled={isLoading}
-            />
-            <p className="input-hint">The description participants will see</p>
-          </div>
+        {!showLobbyView ? (
+          /* Fields View */
+          <div className="setup-form">
+            {error && <div className="error-message" style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
+            
+            <div className="form-group">
+              <label htmlFor="topic">Topic/Description *</label>
+              <input
+                id="topic"
+                type="text"
+                placeholder={`e.g., The process by which plants convert sunlight into energy (max ${INPUT_LIMITS.TOPIC} chars)`}
+                value={topic}
+                onChange={(e) => setTopic(e.target.value.slice(0, INPUT_LIMITS.TOPIC))}
+                className="setup-input"
+                disabled={isLoading}
+              />
+              <p className="input-hint">The description participants will see</p>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="concept">Secret Word *</label>
-            <input
-              id="concept"
-              type="text"
-              placeholder={`e.g., Photosynthesis, French Revolution... (max ${INPUT_LIMITS.CONCEPT} chars)`}
-              value={concept}
-              onChange={(e) => setConcept(e.target.value.slice(0, INPUT_LIMITS.CONCEPT))}
-              className="setup-input"
-              disabled={isLoading}
-            />
-            <p className="input-hint">The word or concept participants need to guess</p>
-          </div>
+            <div className="form-group">
+              <label htmlFor="concept">Secret Word *</label>
+              <input
+                id="concept"
+                type="text"
+                placeholder={`e.g., Photosynthesis, French Revolution... (max ${INPUT_LIMITS.CONCEPT} chars)`}
+                value={concept}
+                onChange={(e) => setConcept(e.target.value.slice(0, INPUT_LIMITS.CONCEPT))}
+                className="setup-input"
+                disabled={isLoading}
+              />
+              <p className="input-hint">The word or concept participants need to guess</p>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="context">Context/Clarification *</label>
-            <textarea
-              id="context"
-              placeholder={`Add clarifications or hints... (max ${INPUT_LIMITS.CONTEXT} chars)`}
-              value={context}
-              onChange={(e) => setContext(e.target.value.slice(0, INPUT_LIMITS.CONTEXT))}
-              className="setup-textarea"
-              rows={3}
-              disabled={isLoading}
-            />
-            <p className="input-hint">Additional context for the game</p>
-          </div>
+            <div className="form-group">
+              <label htmlFor="context">Context/Clarification *</label>
+              <textarea
+                id="context"
+                placeholder={`Add clarifications or hints... (max ${INPUT_LIMITS.CONTEXT} chars)`}
+                value={context}
+                onChange={(e) => setContext(e.target.value.slice(0, INPUT_LIMITS.CONTEXT))}
+                className="setup-textarea"
+                rows={3}
+                disabled={isLoading}
+              />
+              <p className="input-hint">Additional context for the game</p>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="timeLimit">Available Time (minutes) *</label>
-            <input
-              id="timeLimit"
-              type="number"
-              min="1"
-              max="60"
-              placeholder="10"
-              value={timeLimit}
-              onChange={(e) => setTimeLimit(e.target.value.slice(0, INPUT_LIMITS.TIME_LIMIT))}
-              className="setup-input"
-              disabled={isLoading}
-            />
-            <p className="input-hint">Time limit for the game in minutes</p>
-          </div>
+            <div className="form-group">
+              <label htmlFor="timeLimit">Available Time (minutes) *</label>
+              <input
+                id="timeLimit"
+                type="number"
+                min="1"
+                max="60"
+                placeholder="10"
+                value={timeLimit}
+                onChange={(e) => setTimeLimit(e.target.value.slice(0, INPUT_LIMITS.TIME_LIMIT))}
+                className="setup-input"
+                disabled={isLoading}
+              />
+              <p className="input-hint">Time limit for the game in minutes</p>
+            </div>
 
-          <div className="players-waiting">
-            <h3>Players in Lobby ({currentLobby.users.length})</h3>
-            <div className="players-list">
-              {currentLobby.users.map((user) => (
-                <div key={user.id} className="player-card">
-                  <div className="player-avatar">{user.name[0].toUpperCase()}</div>
-                  <span className="player-name">{user.name}</span>
-                  {user.role === 'host' && <span className="teacher-badge">Host</span>}
-                </div>
-              ))}
+            {error && <div className="error-message">{error}</div>}
+
+            <button
+              onClick={handleProceedToLobby}
+              className="proceed-button"
+              disabled={!concept.trim() || !topic.trim() || !context.trim() || !timeLimit || isLoading}
+            >
+              {isLoading ? 'Creating Lobby...' : 'Proceed to Lobby'}
+            </button>
+          </div>
+        ) : (
+          /* Lobby View */
+          <div className="lobby-view">
+            
+            {/* --- MODIFIED QR SECTION --- */}
+            <div className="qr-code-placeholder">
+              {qrCodeUrl ? (
+                <img 
+                  src={qrCodeUrl} 
+                  alt="Scan to join" 
+                  className="qr-code-image"
+                />
+              ) : (
+                <>
+                  <p>Loading QR Code...</p>
+                  <div className="spinner"></div>
+                </>
+              )}
+            </div>
+            <p className="scan-hint">Scan with your phone to join automatically!</p>
+            {/* --------------------------- */}
+
+            <div className="players-waiting">
+              <h3>Players in Lobby ({currentLobby.users.length})</h3>
+              <div className="players-list">
+                {currentLobby.users.map((user) => (
+                  <div key={user.id} className="player-card">
+                    <div className="player-avatar">{user.name[0].toUpperCase()}</div>
+                    <span className="player-name">{user.name}</span>
+                    {user.role === 'host' && <span className="teacher-badge">Host</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {error && <div className="error-message">{error}</div>}
+
+            <button
+              onClick={handleStartGame}
+              className="start-game-button"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Starting...' : 'Start Game'}
+            </button>
+
+            <div className="bottom-buttons">
+              <button onClick={handleBackToFields} className="back-button">
+                Back
+              </button>
+              <button onClick={handleLeaveLobby} className="leave-lobby-button">
+                Leave Lobby
+              </button>
             </div>
           </div>
-
-          <button
-            onClick={() => {
-              console.log('[HostSetup] Start Game button clicked!');
-              handleStartGame();
-            }}
-            className="start-game-button"
-            disabled={!concept.trim() || !topic.trim() || !context.trim() || !timeLimit || isLoading}
-          >
-            {isLoading ? 'Starting...' : 'Start Game'}
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
 };
-
-// Add component-level logging
-console.log('[HostSetup] Component module loaded');
