@@ -2,15 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
 import type { Question } from '../../types';
-import { gameService } from '../../services/gameService';
+import { gameService } from '../../services';
 import './ParticipantGame.css';
 
 export const ParticipantGame: React.FC = () => {
   const navigate = useNavigate();
-  const { currentUser, currentLobby, addQuestion, makeGuess } = useGame();
+  const { currentUser, currentLobby, addQuestion, updateLobby } = useGame();
   const [questionText, setQuestionText] = useState('');
   const [isAsking, setIsAsking] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(currentLobby?.timeLimit || 600);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [error, setError] = useState('');
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [totalTimeLimit, setTotalTimeLimit] = useState(0);
+  const [narwhalFrame, setNarwhalFrame] = useState(0);
+
+  const narwhalFrames = [
+    '/narwal_animation_split/00.jpg',
+    '/narwal_animation_split/01.jpg',
+    '/narwal_animation_split/02.jpg',
+    '/narwal_animation_split/10.jpg',
+    '/narwal_animation_split/11.jpg',
+    '/narwal_animation_split/12.jpg',
+    '/narwal_animation_split/20.jpg',
+    '/narwal_animation_split/21.jpg',
+    '/narwal_animation_split/22.jpg',
+    '/narwal_animation_split/30.jpg',
+    '/narwal_animation_split/31.jpg',
+    '/narwal_animation_split/32.jpg',
+  ];
 
   useEffect(() => {
     if (!currentUser || !currentLobby) {
@@ -18,26 +37,110 @@ export const ParticipantGame: React.FC = () => {
     }
   }, [currentUser, currentLobby, navigate]);
 
+  // Initial fetch of lobby info to get topic
   useEffect(() => {
-    // Countdown timer
-    const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 0) {
-          clearInterval(timer);
-          return 0;
+    if (!currentUser || !currentLobby) return;
+
+    const fetchInitialLobbyInfo = async () => {
+      try {
+        const lobbyInfo = await gameService.getLobbyInfo(currentLobby.code, currentUser.id);
+        console.log('[ParticipantGame] Initial lobby info:', lobbyInfo);
+        
+        // Update participants and topic
+        const users = gameService.convertParticipantsToUsers(
+          lobbyInfo.participants,
+          lobbyInfo.host_name,
+          currentUser.id,
+          currentUser.name,
+          false
+        );
+
+        // Set initial time limit and start time from server
+        if (lobbyInfo.timelimit) {
+          setTotalTimeLimit(lobbyInfo.timelimit);
         }
-        return prev - 1;
-      });
-    }, 1000);
+        if (lobbyInfo.start_time) {
+          const serverStartTime = new Date(lobbyInfo.start_time).getTime();
+          setStartTime(serverStartTime);
+        }
+
+        // Always update with the latest info from server
+        updateLobby({ 
+          users,
+          ...(lobbyInfo.topic && { topic: lobbyInfo.topic }),
+          ...(lobbyInfo.timelimit && { timeLimit: lobbyInfo.timelimit })
+        });
+      } catch (err) {
+        console.error('[ParticipantGame] Error fetching initial lobby info:', err);
+      }
+    };
+
+    fetchInitialLobbyInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  useEffect(() => {
+    // Countdown timer based on start time
+    if (!startTime || !totalTimeLimit) return;
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const elapsedSeconds = Math.floor((now - startTime) / 1000);
+      const remaining = Math.max(0, totalTimeLimit - elapsedSeconds);
+      setTimeRemaining(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(timer);
+      }
+    }, 100); // Update every 100ms for smoother countdown
 
     return () => clearInterval(timer);
-  }, []);
+  }, [startTime, totalTimeLimit]);
+
+  useEffect(() => {
+    // Narwhal animation timer - cycle through frames every 4 seconds, synchronized with pulse
+    // Frame changes when narwhal is at smallest size (0% of animation)
+    const frameTimer = setInterval(() => {
+      setNarwhalFrame(prev => (prev + 1) % narwhalFrames.length);
+    }, 4000);
+
+    return () => clearInterval(frameTimer);
+  }, []); // add narwhalFrames.length to dependency if it fails
+  
+  // Poll for lobby updates (other participants joining, questions, etc.)
+  useEffect(() => {
+    if (!currentUser || !currentLobby) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const lobbyInfo = await gameService.getLobbyInfo(currentLobby.code, currentUser.id);
+        
+        // Update participants list
+        const users = gameService.convertParticipantsToUsers(
+          lobbyInfo.participants,
+          lobbyInfo.host_name,
+          currentUser.id,
+          currentUser.name,
+          false
+        );
+
+        updateLobby({ 
+          users
+        });
+      } catch (err) {
+        console.error('Error polling lobby info:', err);
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [currentUser, currentLobby, updateLobby]);
 
   if (!currentUser || !currentLobby) {
     return null;
   }
 
   const myQuestions = currentLobby.questions.filter(q => q.userId === currentUser.id);
+  
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -46,30 +149,35 @@ export const ParticipantGame: React.FC = () => {
 
   const handleAskQuestion = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!questionText.trim() || isAsking) return;
+    if (!questionText.trim() || isAsking || !currentLobby) return;
 
     setIsAsking(true);
+    setError('');
 
     try {
-      const newQuestion = await gameService.askQuestion(
-        questionText,
-        currentUser.id,
-        currentUser.name
-      );
+      const response = await gameService.askQuestion(currentLobby.code, questionText.trim());
 
-      // Check if the question contains the concept
-      if (currentLobby.concept && questionText.toLowerCase().includes(currentLobby.concept.toLowerCase())) {
-        // Show congratulations popup
-        const timeTaken = (currentLobby.timeLimit || 600) - timeRemaining;
-        alert(`🎉 Congratulations! You guessed the concept: "${currentLobby.concept}"\n\nYour time: ${formatTime(timeTaken)}`);
-        navigate('/results');
-        return;
-      }
+      const newQuestion: Question = {
+        id: Math.random().toString(36).substr(2, 9),
+        userId: currentUser.id,
+        userName: currentUser.name,
+        question: questionText.trim(),
+        answer: response.response,
+        timestamp: Date.now(),
+      };
 
       addQuestion(newQuestion);
       setQuestionText('');
-    } catch (error) {
-      console.error('Error asking question:', error);
+
+      // Check if the answer is CORRECT (user guessed the concept)
+      if (response.response === 'CORRECT') {
+        const timeTaken = totalTimeLimit - timeRemaining;
+        alert(`🎉 Congratulations! You guessed the concept!\n\nYour time: ${formatTime(timeTaken)}`);
+        navigate('/results');
+        return;
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to ask question');
     } finally {
       setIsAsking(false);
     }
@@ -83,24 +191,24 @@ export const ParticipantGame: React.FC = () => {
   };
 
   const getAnswerClass = (answer: string) => {
-    if (answer === 'YES') return 'answer-yes';
-    if (answer === 'NO') return 'answer-no';
-    if (answer === 'I_DONT_KNOW') return 'answer-idk';
-    if (answer === 'OUT_OF_CONTEXT') return 'answer-ooc';
+    if (answer === 'Yes') return 'answer-yes';
+    if (answer === 'No') return 'answer-no';
+    if (answer === "I don't know") return 'answer-idk';
+    if (answer === 'Off-topic' || answer === 'Invalid question') return 'answer-ooc';
+    if (answer === 'CORRECT') return 'answer-correct';
     return 'answer-na';
   };
 
   const getAnswerIcon = (answer: string) => {
-    if (answer === 'YES') return '✓';
-    if (answer === 'NO') return '✗';
-    if (answer === 'I_DONT_KNOW') return '?';
-    if (answer === 'OUT_OF_CONTEXT') return '!';
+    if (answer === 'Yes') return '✓';
+    if (answer === 'No') return '✗';
+    if (answer === "I don't know") return '?';
+    if (answer === 'Off-topic' || answer === 'Invalid question') return '!';
+    if (answer === 'CORRECT') return '🎉';
     return '?';
   };
 
   const getAnswerText = (answer: string) => {
-    if (answer === 'I_DONT_KNOW') return "I Don't Know";
-    if (answer === 'OUT_OF_CONTEXT') return 'Out of Context';
     return answer;
   };
 
@@ -113,7 +221,7 @@ export const ParticipantGame: React.FC = () => {
             <h1>Ask Jimmy</h1>
             <div className="participant-topic-display">
               <span className="participant-topic-label">Topic:</span>
-              <span className="participant-topic-value">{currentLobby.concept || 'Not set'}</span>
+              <span className="participant-topic-value">{currentLobby.topic || 'Not set'}</span>
             </div>
           </div>
         </div>
@@ -185,6 +293,7 @@ export const ParticipantGame: React.FC = () => {
 
             {/* Chat Input */}
             <form onSubmit={handleAskQuestion} className="chat-input-container-participant">
+              {error && <div className="error-message" style={{ color: 'red', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{error}</div>}
               <img src="/narwal_icon.png" alt="Jimmy" className="narwhal-icon-chat" />
               <input
                 type="text"
@@ -218,9 +327,11 @@ export const ParticipantGame: React.FC = () => {
             </div>
             
             <div className="jimmy-section">
-              <div className="narwhal-sprite-container">
-                <div className="narwhal-sprite"></div>
-              </div>
+              <img 
+                src={narwhalFrames[narwhalFrame]} 
+                alt="Jimmy" 
+                className="narwhal-animated" 
+              />
             </div>
           </div>
         </div>

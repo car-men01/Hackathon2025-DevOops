@@ -9,6 +9,8 @@ class LobbyCreate(BaseModel):
     topic: str = Field(..., description="Topic/category of the secret concept")
     timelimit: int = Field(..., description="Time limit in seconds for the game")
     context: Optional[str] = Field(None, description="Optional additional context for the concept")
+    topic: str = Field(..., description="Topic/description shown to participants")
+    time_limit: int = Field(..., description="Time limit in seconds")
 
 
 class LobbyCreateResponse(BaseModel):
@@ -42,7 +44,9 @@ class LobbyInfo(BaseModel):
     timelimit: int
     secret_concept: Optional[str] = Field(None, description="Only visible to host")
     context: Optional[str] = Field(None, description="Only visible to host")
-    lobby_active: bool = Field(..., description="Whether the lobby has been started")
+    start_time: Optional[str] = Field(None, description="ISO datetime when lobby started")
+    timelimit: int = Field(..., description="Time limit in seconds")
+    topic: str = Field(..., description="Topic/description visible to all participants")
 
 
 class LobbyQuestion(BaseModel):
@@ -65,12 +69,12 @@ class UserReconnect(BaseModel):
 
 
 class UserReconnectResponse(BaseModel):
-    """Schema for user reconnection response."""
+    """Schema for user reconnect response."""
     pin: str
     user_id: str
     user_name: str
     is_host: bool
-    lobby_active: bool = Field(..., description="Whether the lobby has been started")
+    start_time: Optional[str] = Field(None, description="ISO datetime when lobby started")
     participants: List[str]
 
 
@@ -78,12 +82,16 @@ class LobbyStart(BaseModel):
     """Schema for starting the lobby."""
     pin: str = Field(..., description="7-digit PIN of the lobby")
     host_id: str = Field(..., description="Host's unique identifier for authentication")
+    secret_concept: Optional[str] = Field(None, description="Optional update to the secret word/concept")
+    context: Optional[str] = Field(None, description="Optional update to additional context")
+    topic: Optional[str] = Field(None, description="Optional update to topic/description")
+    time_limit: Optional[int] = Field(None, description="Optional update to time limit in seconds")
 
 
 class LobbyStartResponse(BaseModel):
     """Schema for lobby start response."""
     pin: str
-    lobby_active: bool = Field(..., description="Whether the lobby has been started")
+    start_time: str = Field(..., description="ISO datetime when lobby started")
     participants: List[str]
 
 
@@ -97,7 +105,6 @@ class LobbySession(BaseModel):
     """Schema for lobby session information."""
     session_id: str
     questions_asked: int
-    lobby_active: bool
     history: list[dict] = []
 
 

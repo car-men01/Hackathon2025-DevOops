@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { GameState, User, Lobby, Question, UserRole } from '../types';
-import { gameService } from '../services/gameService';
+import type { GameState, User, LobbyType, Question } from '../types';
 
 interface GameContextType extends GameState {
   setCurrentUser: (user: User | null) => void;
-  setCurrentLobby: (lobby: Lobby | null) => void;
-  updateLobby: (updates: Partial<Lobby>) => void;
+  setCurrentLobby: (lobby: LobbyType | null) => void;
+  updateLobby: (updates: Partial<LobbyType>) => void;
   addQuestion: (question: Question) => void;
   setSelectedStudent: (studentId: string) => void;
   makeGuess: (guess: string) => boolean;
@@ -25,11 +24,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setGameState(prev => ({ ...prev, currentUser: user }));
   };
 
-  const setCurrentLobby = (lobby: Lobby | null) => {
+  const setCurrentLobby = (lobby: LobbyType | null) => {
     setGameState(prev => ({ ...prev, currentLobby: lobby }));
   };
 
-  const updateLobby = (updates: Partial<Lobby>) => {
+  const updateLobby = (updates: Partial<LobbyType>) => {
     setGameState(prev => ({
       ...prev,
       currentLobby: prev.currentLobby ? { ...prev.currentLobby, ...updates } : null,
@@ -97,8 +96,4 @@ export const useGame = () => {
   return context;
 };
 
-// Mock data generator
-export const createMockLobby = (ownerId: string, ownerRole: UserRole): Lobby => {
-  return gameService.createLobby(ownerId, ownerRole);
-};
 

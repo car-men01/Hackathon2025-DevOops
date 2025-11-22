@@ -5,9 +5,11 @@ import './HostGame.css';
 
 export const HostGame: React.FC = () => {
   const navigate = useNavigate();
-  const { currentLobby, selectedStudentId, setSelectedStudent } = useGame();
+  const { currentLobby, selectedStudentId, setSelectedStudent, currentUser, updateLobby } = useGame();
   const [selectedStudent, setLocalSelectedStudent] = useState<string | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState(currentLobby?.timeLimit || 600);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [totalTimeLimit, setTotalTimeLimit] = useState(0);
 
   useEffect(() => {
     if (!currentLobby || currentLobby.status !== 'playing') {
@@ -15,20 +17,65 @@ export const HostGame: React.FC = () => {
     }
   }, [currentLobby, navigate]);
 
+  // Initial fetch of lobby info to get start time and time limit
   useEffect(() => {
-    // Countdown timer
-    const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 0) {
-          clearInterval(timer);
-          return 0;
+    if (!currentUser || !currentLobby) return;
+
+    const fetchInitialLobbyInfo = async () => {
+      try {
+        const { gameService } = await import('../../services/gameService');
+        const lobbyInfo = await gameService.getLobbyInfo(currentLobby.code, currentUser.id);
+        console.log('[HostGame] Initial lobby info:', lobbyInfo);
+        
+        // Set initial time limit and start time from server
+        if (lobbyInfo.timelimit) {
+          setTotalTimeLimit(lobbyInfo.timelimit);
         }
-        return prev - 1;
-      });
-    }, 1000);
+        if (lobbyInfo.start_time) {
+          const serverStartTime = new Date(lobbyInfo.start_time).getTime();
+          setStartTime(serverStartTime);
+        }
+
+        // Update lobby with latest info
+        const users = gameService.convertParticipantsToUsers(
+          lobbyInfo.participants,
+          lobbyInfo.host_name,
+          currentUser.id,
+          currentUser.name,
+          true
+        );
+
+        updateLobby({ 
+          users,
+          ...(lobbyInfo.topic && { topic: lobbyInfo.topic }),
+          ...(lobbyInfo.timelimit && { timeLimit: lobbyInfo.timelimit })
+        });
+      } catch (err) {
+        console.error('[HostGame] Error fetching initial lobby info:', err);
+      }
+    };
+
+    fetchInitialLobbyInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // Countdown timer based on start time
+    if (!startTime || !totalTimeLimit) return;
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const elapsedSeconds = Math.floor((now - startTime) / 1000);
+      const remaining = Math.max(0, totalTimeLimit - elapsedSeconds);
+      setTimeRemaining(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(timer);
+      }
+    }, 100); // Update every 100ms for smoother countdown
 
     return () => clearInterval(timer);
-  }, []);
+  }, [startTime, totalTimeLimit]);
 
   if (!currentLobby) {
     return null;
@@ -82,21 +129,29 @@ export const HostGame: React.FC = () => {
         {/* Header */}
         <div className="host-header">
           <div className="header-left">
-            <h1>Ask Jimmy</h1>
-            <div className="concept-display">
-              <span className="concept-label">Topic:</span>
-              <span className="concept-value">{currentLobby.concept}</span>
+            <div className="header-top-row">
+              <h1>Ask Jimmy</h1>
+              <button onClick={handleEndGame} className="end-game-button">
+                End Game
+              </button>
+            </div>
+            <div className="header-info-row">
+              <div className="secret-word-display">
+                <span className="secret-word-label">Secret Word:</span>
+                <span className="secret-word-value">{currentLobby.concept}</span>
+              </div>
+              <div className="concept-display">
+                <span className="concept-label">Topic:</span>
+                <span className="concept-value">{currentLobby.topic || 'Not set'}</span>
+              </div>
             </div>
             {currentLobby.context && (
               <div className="context-display">
-                <span className="context-label">📝 Context:</span>
+                <span className="context-label">Context:</span>
                 <span className="context-value">{currentLobby.context}</span>
               </div>
             )}
           </div>
-          <button onClick={handleEndGame} className="end-game-button">
-            End Game
-          </button>
         </div>
 
         {/* Main Content */}
@@ -108,19 +163,19 @@ export const HostGame: React.FC = () => {
               {students.map((student) => {
                 const studentQCount = currentLobby.questions.filter(q => q.userId === student.id).length;
                 return (
-                  <button
+                  <div
                     key={student.id}
                     onClick={() => handleStudentSelect(student.id)}
-                    className={`participant-selector-button ${currentStudentId === student.id ? 'active' : ''}`}
+                    className={`participant-item-host ${currentStudentId === student.id ? 'active' : ''}`}
                   >
-                    <div className="participant-avatar-small">
+                    <div className="participant-avatar-host">
                       {student.name[0].toUpperCase()}
                     </div>
-                    <div className="participant-selector-info">
-                      <span className="participant-selector-name">{student.name}</span>
-                      <span className="participant-question-count">{studentQCount} questions</span>
+                    <div className="participant-info-host">
+                      <div className="participant-name-host">{student.name}</div>
+                      <div className="participant-question-count-host">{studentQCount} questions</div>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -193,13 +248,13 @@ export const HostGame: React.FC = () => {
               </div>
               <div className="stat-card">
                 <div className="stat-number">
-                  {currentLobby.questions.filter(q => q.answer === 'YES').length}
+                  {currentLobby.questions.filter(q => q.answer === 'Yes').length}
                 </div>
                 <div className="stat-label">YES Answers</div>
               </div>
               <div className="stat-card">
                 <div className="stat-number">
-                  {currentLobby.questions.filter(q => q.answer === 'NO').length}
+                  {currentLobby.questions.filter(q => q.answer === 'No').length}
                 </div>
                 <div className="stat-label">NO Answers</div>
               </div>

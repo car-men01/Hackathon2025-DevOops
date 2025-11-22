@@ -38,35 +38,43 @@ async def create_lobby(lobby_data: LobbyCreate):
     """
     print("Received request to create lobby")
     try:
+        logger.info(f"[CREATE_LOBBY] Request received: host_name={lobby_data.host_name}, secret_concept={lobby_data.secret_concept}, context={lobby_data.context}, topic={lobby_data.topic}, time_limit={lobby_data.time_limit}")
+        
         # Generate unique PIN
         pin = Lobby.generate_pin()
         while pin in game_master.lobbies:
             pin = Lobby.generate_pin()
-        print("Generated unique PIN:", pin)
+        
+        logger.info(f"[CREATE_LOBBY] Generated PIN: {pin}")
+        
         # Create host user
         host = User(name=lobby_data.host_name)
-        print("Host created with name:", host.name)
+        logger.info(f"[CREATE_LOBBY] Created host user: user_id={host.user_id}, name={host.name}")
+        
         # Create lobby instance with unique PIN, host, and concept
         lobby = Lobby(
             pin=pin,
             host=host,
             secret_concept=lobby_data.secret_concept,
+            context=lobby_data.context,
             topic=lobby_data.topic,
-            timelimit=lobby_data.timelimit,
-            context=lobby_data.context
+            timelimit=lobby_data.time_limit
         )
         print("Creating lobby with PIN:", lobby.pin)
         game_master.create_lobby(lobby)
         print("Lobby created with PIN:", lobby.pin)
         logger.info(f"Lobby created with PIN {lobby.pin} by host {host.name}")
         
-        return LobbyCreateResponse(
+        response = LobbyCreateResponse(
             pin=lobby.pin,
             host_id=host.user_id,
             host_name=host.name
         )
+        logger.info(f"[CREATE_LOBBY] Returning response: {response}")
+        
+        return response
     except Exception as e:
-        logger.error(f"Error creating lobby: {str(e)}")
+        logger.error(f"[CREATE_LOBBY] Error creating lobby: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -118,30 +126,59 @@ async def start_lobby(lobby_start: LobbyStart):
     
     The host uses this endpoint to start the lobby after participants have joined.
     This creates a lobby with the Lobby Master AI.
+    Optionally updates concept, context, topic, and time_limit if provided.
     """
     try:
-        lobby = game_master.get_lobby(lobby_start.pin)
+        logger.info(f"[START_LOBBY] Request received: pin={lobby_start.pin}, host_id={lobby_start.host_id}")
+        logger.info(f"[START_LOBBY] Available lobbies: {list(lobbies.keys())}")
+        
+        lobby = lobbies.get(lobby_start.pin)
         
         if not lobby:
+            logger.error(f"[START_LOBBY] Lobby not found: {lobby_start.pin}")
             raise HTTPException(status_code=404, detail="Lobby not found with that PIN")
+        
+        logger.info(f"[START_LOBBY] Lobby found: pin={lobby.pin}, host_user_id={lobby.host.user_id}")
         
         # Verify host_id
         if lobby.host.user_id != lobby_start.host_id:
+            logger.error(f"[START_LOBBY] Host ID mismatch: expected={lobby.host.user_id}, received={lobby_start.host_id}")
             raise HTTPException(status_code=403, detail="Only the host can start the lobby")
+        
+        # Update lobby fields if provided
+        if lobby_start.secret_concept is not None:
+            lobby.secret_concept = lobby_start.secret_concept
+            logger.info(f"[START_LOBBY] Updated secret_concept: {lobby_start.secret_concept}")
+        
+        if lobby_start.context is not None:
+            lobby.context = lobby_start.context
+            logger.info(f"[START_LOBBY] Updated context: {lobby_start.context}")
+        
+        if lobby_start.topic is not None:
+            lobby.topic = lobby_start.topic
+            logger.info(f"[START_LOBBY] Updated topic: {lobby_start.topic}")
+        
+        if lobby_start.time_limit is not None:
+            lobby.timelimit = lobby_start.time_limit
+            logger.info(f"[START_LOBBY] Updated time_limit: {lobby_start.time_limit}")
         
         # Start lobby using Lobby method
         try:
             lobby.start()
+            logger.info(f"[START_LOBBY] Lobby started successfully: {lobby_start.pin}")
         except ValueError as e:
+            logger.error(f"[START_LOBBY] Error starting lobby: {str(e)}")
             raise HTTPException(status_code=400, detail=str(e))
         
-        logger.info(f"Lobby started {lobby_start.pin}")
+        logger.info(f"[START_LOBBY] Lobby started {lobby_start.pin}")
         
-        return LobbyStartResponse(
+        response = LobbyStartResponse(
             pin=lobby.pin,
-            lobby_active=True,
+            start_time=lobby.start_time.isoformat(),
             participants=lobby.get_participant_names()
         )
+        logger.info(f"[START_LOBBY] Returning response: {response}")
+        return response
     except HTTPException:
         raise
     except Exception as e:
@@ -180,15 +217,24 @@ async def delete_lobby(pin: str):
 async def get_lobby_info(pin: str, user_id: str):
     """Get information about a lobby using its PIN. Secret concept and context only visible to host."""
     try:
+        logger.info(f"[GET_LOBBY_INFO] Request received: pin={pin}, user_id={user_id}")
+        logger.info(f"[GET_LOBBY_INFO] Available lobbies: {list(lobbies.keys())}")
+        
         lobby = game_master.get_lobby(pin)
         
         if not lobby:
+            logger.error(f"[GET_LOBBY_INFO] Lobby not found: {pin}")
             raise HTTPException(status_code=404, detail="Lobby not found")
+        
+        logger.info(f"[GET_LOBBY_INFO] Lobby found: pin={lobby.pin}, host={lobby.host.name}, participants={lobby.get_participant_names()}")
         
         # Check if the requesting user is the host
         is_host = lobby.host.user_id == user_id
+        logger.info(f"[GET_LOBBY_INFO] User is host: {is_host}")
         
-        return LobbyInfo(
+        logger.info(f"[GET_LOBBY_INFO] Lobby topic: {lobby.topic}")
+        
+        response = LobbyInfo(
             pin=lobby.pin,
             host_name=lobby.host.name,
             participants=lobby.get_participant_names(),
@@ -198,6 +244,9 @@ async def get_lobby_info(pin: str, user_id: str):
             context=lobby.context if is_host else None,
             lobby_active=lobby.start_time is not None
         )
+        logger.info(f"[GET_LOBBY_INFO] Returning response with topic: {response.topic}")
+        logger.info(f"[GET_LOBBY_INFO] Full response: {response}")
+        return response
     except HTTPException:
         raise
     except Exception as e:
@@ -225,7 +274,7 @@ async def reconnect_user(reconnect_data: UserReconnect):
                 user_id=lobby.host.user_id,
                 user_name=lobby.host.name,
                 is_host=True,
-                lobby_active=lobby.start_time is not None,
+                start_time=lobby.start_time.isoformat() if lobby.start_time else None,
                 participants=lobby.get_participant_names()
             )
         
@@ -237,7 +286,7 @@ async def reconnect_user(reconnect_data: UserReconnect):
                 user_id=participant.user_id,
                 user_name=participant.name,
                 is_host=False,
-                lobby_active=lobby.start_time is not None,
+                start_time=lobby.start_time.isoformat() if lobby.start_time else None,
                 participants=lobby.get_participant_names()
             )
         
@@ -301,3 +350,66 @@ async def chat_with_gemini(chat_request: ChatRequest):
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "gemini-api"}
+
+
+@router.post("/qr/generate")
+async def generate_qr_code(link: str):
+    """
+    Generate a QR code from a link and return as base64 data URL.
+
+    Args:
+        link: The URL/link to encode in the QR code
+
+    Returns:
+        JSON with data_url (ready for HTML img src)
+    """
+    try:
+        from app.services.QRService import QRService
+
+        logger.info(f"Generating QR code for link: {link}")
+
+        # Generate QR code as data URL (ready for frontend)
+        data_url = QRService.generate_qr_code_data_url(link)
+
+        return {
+            "success": True,
+            "link": link,
+            "qr_code_data_url": data_url,
+            "message": "QR code generated successfully"
+        }
+
+    except Exception as e:
+        logger.error(f"Error generating QR code: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/qr/generate-base64")
+async def generate_qr_code_base64(link: str):
+    """
+    Generate a QR code from a link and return as base64 string.
+
+    Args:
+        link: The URL/link to encode in the QR code
+
+    Returns:
+        JSON with base64 encoded image
+    """
+    try:
+        from app.services.QRService import QRService
+
+        logger.info(f"Generating QR code (base64) for link: {link}")
+
+        # Generate QR code as base64
+        base64_image = QRService.generate_qr_code_base64(link)
+
+        return {
+            "success": True,
+            "link": link,
+            "qr_code_base64": base64_image,
+            "message": "QR code generated successfully"
+        }
+
+    except Exception as e:
+        logger.error(f"Error generating QR code: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
