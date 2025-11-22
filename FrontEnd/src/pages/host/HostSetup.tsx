@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
-import { gameService } from '../../services/gameService';
+import { gameService } from '../../services';
 import { JimmyNarwhal } from '../../components/JimmyNarwhal';
 import type { LobbyType } from '../../types';
 import './HostSetup.css';
@@ -59,14 +59,17 @@ export const HostSetup: React.FC = () => {
         );
         console.log('[HostSetup] Converted users:', users);
 
-        updateLobby({ users });
+        updateLobby({ 
+          users,
+          ...(lobbyInfo.topic && { topic: lobbyInfo.topic })
+        });
       } catch (err) {
         console.error('[HostSetup] Error polling lobby info:', err);
       }
     }, 2000); // Poll every 2 seconds
 
     return () => clearInterval(pollInterval);
-  }, [currentLobby, currentUser, lobbyCreated]);
+  }, [currentLobby, currentUser, lobbyCreated, updateLobby]);
 
   const handleStartGame = async () => {
     console.log('[HostSetup] handleStartGame called - START');
@@ -120,6 +123,7 @@ export const HostSetup: React.FC = () => {
           maxQuestions: 10,
           concept: concept.trim(),
           context: context.trim(),
+          topic: topic.trim(),
           timeLimit: parseInt(timeLimit) * 60,
         };
 
@@ -143,13 +147,21 @@ export const HostSetup: React.FC = () => {
       } else {
         // Lobby already exists, just start it
         console.log('[HostSetup] Lobby already exists, starting:', currentLobby.code);
-        await gameService.startLobby(currentLobby.code, currentUser.id);
+        await gameService.startLobby(
+          currentLobby.code, 
+          currentUser.id,
+          concept.trim(),
+          context.trim(),
+          topic.trim(),
+          parseInt(timeLimit) * 60
+        );
         console.log('[HostSetup] Lobby started successfully');
         
         updateLobby({ 
           status: 'playing',
           concept: concept.trim(),
           context: context.trim(),
+          topic: topic.trim(),
           timeLimit: parseInt(timeLimit) * 60,
         });
         console.log('[HostSetup] Navigating to host-game');

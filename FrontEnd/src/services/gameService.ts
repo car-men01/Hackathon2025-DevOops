@@ -82,12 +82,23 @@ class GameService {
   }
 
   // Start the lobby (host only)
-  async startLobby(pin: string, hostId: string): Promise<StartLobbyResponse> {
+  async startLobby(
+    pin: string, 
+    hostId: string, 
+    secretConcept?: string, 
+    context?: string, 
+    topic?: string, 
+    timeLimit?: number
+  ): Promise<StartLobbyResponse> {
     const data = await this.fetchAPI<StartLobbyResponse>('/lobby/start', {
       method: 'POST',
       body: JSON.stringify({
         pin,
         host_id: hostId,
+        secret_concept: secretConcept,
+        context: context,
+        topic: topic,
+        time_limit: timeLimit
       } as StartLobbyRequest),
     });
 

@@ -1,12 +1,50 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
-import { JimmyNarwhal } from '../../components/JimmyNarwhal';
 import './Results.css';
 
 export const Results: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, currentLobby, setCurrentUser, setCurrentLobby } = useGame();
+  const [narwhalFrame, setNarwhalFrame] = useState(0);
+
+  const narwhalFrames = [
+    '/narwal_animation_split/00.jpg',
+    '/narwal_animation_split/01.jpg',
+    '/narwal_animation_split/02.jpg',
+    '/narwal_animation_split/10.jpg',
+    '/narwal_animation_split/11.jpg',
+    '/narwal_animation_split/12.jpg',
+    '/narwal_animation_split/20.jpg',
+    '/narwal_animation_split/21.jpg',
+    '/narwal_animation_split/22.jpg',
+    '/narwal_animation_split/30.jpg',
+    '/narwal_animation_split/31.jpg',
+    '/narwal_animation_split/32.jpg',
+  ];
+
+  useEffect(() => {
+    // Play celebration sounds when page loads
+    const playSounds = async () => {
+      try {
+        // Play "Yay!" sound 
+        const yaySoundPath = '/sounds/yay.mp3';
+        const yayAudio = new Audio(yaySoundPath);
+        await yayAudio.play();
+      } catch (error) {
+        console.log('Sound playback error:', error);
+      }
+    };
+
+    playSounds();
+
+    // Narwhal animation timer - cycle through frames every 4 seconds
+    const frameTimer = setInterval(() => {
+      setNarwhalFrame(prev => (prev + 1) % narwhalFrames.length);
+    }, 4000);
+
+    return () => clearInterval(frameTimer);
+  }, [narwhalFrames.length]);
 
   if (!currentUser || !currentLobby) {
     navigate('/');
@@ -16,14 +54,27 @@ export const Results: React.FC = () => {
   const isTeacher = currentUser.role === 'host';
   const students = currentLobby.users.filter(u => u.role === 'participant');
   
-  // Calculate scores for each student
+  // Calculate scores for each student based on questions (primary) and time (secondary)
   const studentScores = students.map(student => {
     const studentQuestions = currentLobby.questions.filter(q => q.userId === student.id);
-    const score = Math.max(100 - studentQuestions.length * 10, 0);
-    return { ...student, score, questionsUsed: studentQuestions.length };
-  }).sort((a, b) => b.score - a.score);
+    const questionsUsed = studentQuestions.length;
+    const timeElapsed = student.timeElapsed || 0;
+    return { ...student, questionsUsed, timeElapsed };
+  }).sort((a, b) => {
+    // Sort by questions first (fewer is better), then by time (less is better)
+    if (a.questionsUsed !== b.questionsUsed) {
+      return a.questionsUsed - b.questionsUsed;
+    }
+    return a.timeElapsed - b.timeElapsed;
+  });
 
   const winner = currentLobby.winner || studentScores[0];
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleNewGame = () => {
     setCurrentUser(null);
@@ -33,10 +84,29 @@ export const Results: React.FC = () => {
 
   return (
     <div className="results-page">
+      {/* Animated Bubbles */}
+      <div className="bubble bubble-1"></div>
+      <div className="bubble bubble-2"></div>
+      <div className="bubble bubble-3"></div>
+      <div className="bubble bubble-4"></div>
+      <div className="bubble bubble-5"></div>
+      <div className="bubble bubble-6"></div>
+      <div className="bubble bubble-7"></div>
+      <div className="bubble bubble-8"></div>
+
       <div className="results-container">
         <div className="results-header">
-          <JimmyNarwhal state="correct" />
           <h1>Game Over!</h1>
+          
+          {/* Animated Narwhal */}
+          <div className="narwhal-celebration">
+            <img 
+              src={narwhalFrames[narwhalFrame]} 
+              alt="Jimmy celebrates" 
+              className="narwhal-animated-results" 
+            />
+          </div>
+
           {winner && (
             <div className="winner-announcement">
               <h2>🎉 {winner.name} Won! 🎉</h2>
@@ -55,7 +125,7 @@ export const Results: React.FC = () => {
                   <span className="col-rank">Rank</span>
                   <span className="col-name">Student Name</span>
                   <span className="col-questions">Questions</span>
-                  <span className="col-score">Score</span>
+                  <span className="col-time">Time</span>
                 </div>
                 {studentScores.map((student, index) => (
                   <div key={student.id} className={`results-table-row ${index === 0 ? 'winner-row' : ''}`}>
@@ -67,7 +137,7 @@ export const Results: React.FC = () => {
                     </span>
                     <span className="col-name">{student.name}</span>
                     <span className="col-questions">{student.questionsUsed}</span>
-                    <span className="col-score">{student.score}</span>
+                    <span className="col-time">{formatTime(student.timeElapsed || 0)}</span>
                   </div>
                 ))}
               </div>
@@ -106,16 +176,16 @@ export const Results: React.FC = () => {
                 <div className="score-display">
                   <div className="score-circle">
                     <span className="score-number">
-                      {studentScores.find(s => s.id === currentUser.id)?.score || 0}
+                      {studentScores.find(s => s.id === currentUser.id)?.questionsUsed || 0}
                     </span>
-                    <span className="score-max">/ 100</span>
+                    <span className="score-label">Questions</span>
                   </div>
                 </div>
                 <div className="performance-details">
                   <div className="detail-item">
-                    <span className="detail-label">Questions Used</span>
+                    <span className="detail-label">Time Taken</span>
                     <span className="detail-value">
-                      {currentLobby.questions.filter(q => q.userId === currentUser.id).length}
+                      {formatTime(studentScores.find(s => s.id === currentUser.id)?.timeElapsed || 0)}
                     </span>
                   </div>
                   <div className="detail-item">
@@ -141,7 +211,10 @@ export const Results: React.FC = () => {
                       {index > 2 && `#${index + 1}`}
                     </span>
                     <span className="leaderboard-name">{student.name}</span>
-                    <span className="leaderboard-score">{student.score}</span>
+                    <div className="leaderboard-stats">
+                      <span className="leaderboard-questions">{student.questionsUsed}Q</span>
+                      <span className="leaderboard-time">{formatTime(student.timeElapsed || 0)}</span>
+                    </div>
                   </div>
                 ))}
               </div>

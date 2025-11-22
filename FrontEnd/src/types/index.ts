@@ -5,6 +5,8 @@ export interface User {
   name: string;
   role: UserRole;
   score: number;
+  questionsUsed?: number;
+  timeElapsed?: number;
 }
 
 export interface Question {
@@ -20,8 +22,10 @@ export interface LobbyType {
   id?: string;
   code: string;
   ownerId: string;
+  topic?: string;
   concept?: string;
   context?: string;
+  topic?: string;
   timeLimit?: number;
   users: User[];
   status: 'waiting' | 'playing' | 'finished';
@@ -70,6 +74,10 @@ export interface JoinLobbyResponse {
 export interface StartLobbyRequest {
   pin: string;
   host_id: string;
+  secret_concept?: string;
+  context?: string;
+  topic?: string;
+  time_limit?: number;
 }
 
 export interface StartLobbyResponse {
@@ -86,6 +94,7 @@ export interface LobbyInfoResponse {
   context?: string;
   start_time?: string;
   timelimit: number;
+  topic: string;
 }
 
 export interface AskQuestionRequest {
