@@ -256,9 +256,6 @@ export const Results: React.FC = () => {
                   </button>
                 )}
               </PDFDownloadLink>
-              <button onClick={handleNewGame} className="secondary-action-button">
-                New Game
-              </button>
             </>
           ) : (
             <button onClick={handleBackToMenu} className="primary-action-button">
