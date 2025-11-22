@@ -14,6 +14,22 @@ export const ParticipantGame: React.FC = () => {
   const [error, setError] = useState('');
   const [startTime, setStartTime] = useState<number | null>(null);
   const [totalTimeLimit, setTotalTimeLimit] = useState(0);
+  const [narwhalFrame, setNarwhalFrame] = useState(0);
+
+  const narwhalFrames = [
+    '/narwal_animation_split/00.jpg',
+    '/narwal_animation_split/01.jpg',
+    '/narwal_animation_split/02.jpg',
+    '/narwal_animation_split/10.jpg',
+    '/narwal_animation_split/11.jpg',
+    '/narwal_animation_split/12.jpg',
+    '/narwal_animation_split/20.jpg',
+    '/narwal_animation_split/21.jpg',
+    '/narwal_animation_split/22.jpg',
+    '/narwal_animation_split/30.jpg',
+    '/narwal_animation_split/31.jpg',
+    '/narwal_animation_split/32.jpg',
+  ];
 
   useEffect(() => {
     if (!currentUser || !currentLobby) {
@@ -81,6 +97,16 @@ export const ParticipantGame: React.FC = () => {
     return () => clearInterval(timer);
   }, [startTime, totalTimeLimit]);
 
+  useEffect(() => {
+    // Narwhal animation timer - cycle through frames every 4 seconds, synchronized with pulse
+    // Frame changes when narwhal is at smallest size (0% of animation)
+    const frameTimer = setInterval(() => {
+      setNarwhalFrame(prev => (prev + 1) % narwhalFrames.length);
+    }, 4000);
+
+    return () => clearInterval(frameTimer);
+  }, []); // add narwhalFrames.length to dependency if it fails
+  
   // Poll for lobby updates (other participants joining, questions, etc.)
   useEffect(() => {
     if (!currentUser || !currentLobby) return;
@@ -301,9 +327,11 @@ export const ParticipantGame: React.FC = () => {
             </div>
             
             <div className="jimmy-section">
-              <div className="narwhal-sprite-container">
-                <div className="narwhal-sprite"></div>
-              </div>
+              <img 
+                src={narwhalFrames[narwhalFrame]} 
+                alt="Jimmy" 
+                className="narwhal-animated" 
+              />
             </div>
           </div>
         </div>
