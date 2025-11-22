@@ -12,7 +12,8 @@ from app.schemas.lobby import (
     LobbyStartResponse,
     LobbyInfo,
     UserReconnect,
-    UserReconnectResponse
+    UserReconnectResponse,
+    LobbyDeleteResponse
 )
 from app.services.GeminiAgent import GeminiAgent
 from app.services.GameMasterAgent import game_master
@@ -26,9 +27,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# In-memory storage for lobbies
-lobbies: Dict[str, Lobby] = {}  # key: pin, value: Lobby object
-
 
 @router.post("/lobby/create", response_model=LobbyCreateResponse)
 async def create_lobby(lobby_data: LobbyCreate):
@@ -38,12 +36,13 @@ async def create_lobby(lobby_data: LobbyCreate):
     The host provides their name, the secret concept, and optional context.
     Returns a 7-digit PIN that participants can use to join.
     """
+    print("Received request to create lobby")
     try:
         logger.info(f"[CREATE_LOBBY] Request received: host_name={lobby_data.host_name}, secret_concept={lobby_data.secret_concept}, context={lobby_data.context}, topic={lobby_data.topic}, time_limit={lobby_data.time_limit}")
         
         # Generate unique PIN
         pin = Lobby.generate_pin()
-        while pin in lobbies:
+        while pin in game_master.lobbies:
             pin = Lobby.generate_pin()
         
         logger.info(f"[CREATE_LOBBY] Generated PIN: {pin}")
@@ -61,11 +60,10 @@ async def create_lobby(lobby_data: LobbyCreate):
             topic=lobby_data.topic,
             timelimit=lobby_data.time_limit
         )
-        
-        lobbies[lobby.pin] = lobby
-        
-        logger.info(f"[CREATE_LOBBY] Lobby created with PIN {lobby.pin} by host {host.name}, topic={lobby.topic}, timelimit={lobby.timelimit}")
-        logger.info(f"[CREATE_LOBBY] Total lobbies in memory: {len(lobbies)}")
+        print("Creating lobby with PIN:", lobby.pin)
+        game_master.create_lobby(lobby)
+        print("Lobby created with PIN:", lobby.pin)
+        logger.info(f"Lobby created with PIN {lobby.pin} by host {host.name}")
         
         response = LobbyCreateResponse(
             pin=lobby.pin,
@@ -88,12 +86,12 @@ async def join_lobby(join_data: ParticipantJoin):
     Participants provide the 7-digit PIN and their name to join the lobby.
     """
     try:
-        lobby = lobbies.get(join_data.pin)
+        lobby = game_master.get_lobby(join_data.pin)
         
         if not lobby:
             raise HTTPException(status_code=404, detail="Lobby not found with that PIN")
         
-        if lobby.start_time:
+        if lobby.start_time is not None:
             raise HTTPException(status_code=400, detail="Lobby has already started")
         
         # Create participant user
@@ -132,9 +130,9 @@ async def start_lobby(lobby_start: LobbyStart):
     """
     try:
         logger.info(f"[START_LOBBY] Request received: pin={lobby_start.pin}, host_id={lobby_start.host_id}")
-        logger.info(f"[START_LOBBY] Available lobbies: {list(lobbies.keys())}")
+        logger.info(f"[START_LOBBY] Available lobbies: {list(game_master.lobbies.keys())}")
         
-        lobby = lobbies.get(lobby_start.pin)
+        lobby = game_master.get_lobby(lobby_start.pin)
         
         if not lobby:
             logger.error(f"[START_LOBBY] Lobby not found: {lobby_start.pin}")
@@ -188,14 +186,41 @@ async def start_lobby(lobby_start: LobbyStart):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.delete("/lobby/{pin}", response_model=LobbyDeleteResponse)
+async def delete_lobby(pin: str):
+    """
+    Delete a lobby and all its data (users and questions).
+    """
+    try:
+        lobby = game_master.get_lobby(pin)
+        
+        if not lobby:
+            raise HTTPException(status_code=404, detail="Lobby not found with that PIN")
+        
+        # Delete the lobby from game_master
+        del game_master.lobbies[pin]
+        
+        logger.info(f"Lobby deleted {pin}")
+        
+        return LobbyDeleteResponse(
+            pin=pin,
+            message="Lobby and all associated data deleted successfully"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting lobby: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/lobby/{pin}", response_model=LobbyInfo)
 async def get_lobby_info(pin: str, user_id: str):
     """Get information about a lobby using its PIN. Secret concept and context only visible to host."""
     try:
         logger.info(f"[GET_LOBBY_INFO] Request received: pin={pin}, user_id={user_id}")
-        logger.info(f"[GET_LOBBY_INFO] Available lobbies: {list(lobbies.keys())}")
+        logger.info(f"[GET_LOBBY_INFO] Available lobbies: {list(game_master.lobbies.keys())}")
         
-        lobby = lobbies.get(pin)
+        lobby = game_master.get_lobby(pin)
         
         if not lobby:
             logger.error(f"[GET_LOBBY_INFO] Lobby not found: {pin}")
@@ -213,11 +238,12 @@ async def get_lobby_info(pin: str, user_id: str):
             pin=lobby.pin,
             host_name=lobby.host.name,
             participants=lobby.get_participant_names(),
+            topic=lobby.topic,
+            timelimit=lobby.timelimit,
+            start_time=lobby.start_time.isoformat() if lobby.start_time else None,
             secret_concept=lobby.secret_concept if is_host else None,
             context=lobby.context if is_host else None,
-            start_time=lobby.start_time.isoformat() if lobby.start_time else None,
-            timelimit=lobby.timelimit,
-            topic=lobby.topic
+            lobby_active=lobby.start_time is not None
         )
         logger.info(f"[GET_LOBBY_INFO] Returning response with topic: {response.topic}")
         logger.info(f"[GET_LOBBY_INFO] Full response: {response}")
@@ -237,7 +263,7 @@ async def reconnect_user(reconnect_data: UserReconnect):
     Users provide their PIN and user_id.
     """
     try:
-        lobby = lobbies.get(reconnect_data.pin)
+        lobby = game_master.get_lobby(reconnect_data.pin)
         
         if not lobby:
             raise HTTPException(status_code=404, detail="Lobby not found with that PIN")
@@ -287,11 +313,12 @@ async def ask_question(pin: str, question: LobbyQuestion):
     - CORRECT (if you guessed the word)
     """
     try:
-        result = await game_master.process_question(pin, question.question)
+        result = await game_master.process_question(pin, question.user_id, question.question)
 
         return LobbyResponse(
+            question_id=result["question_id"],
             response=result["response"],
-            questions_remaining=result["questions_remaining"]
+            message=result["message"]
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

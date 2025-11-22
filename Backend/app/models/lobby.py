@@ -22,7 +22,7 @@ class Lobby:
         self.topic = topic
         self.timelimit = timelimit
         self.participants: Dict[str, User] = {}  # key: user_id, value: User object
-        self.start_time = None
+        self.start_time: Optional[datetime] = None
     
     def add_participant(self, participant: User) -> None:
         """Add a participant to the lobby."""
@@ -44,7 +44,7 @@ class Lobby:
     
     def start(self) -> None:
         """Start the lobby."""
-        if self.start_time:
+        if self.start_time is not None:
             raise ValueError("Lobby has already started")
         if len(self.participants) == 0:
             raise ValueError("Cannot start lobby without participants")
