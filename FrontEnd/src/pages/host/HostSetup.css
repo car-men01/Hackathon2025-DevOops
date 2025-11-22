@@ -121,6 +121,26 @@
   min-height: 80px;
 }
 
+.time-input {
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  appearance: none;
+}
+
+.time-input::-webkit-inner-spin-button,
+.time-input::-webkit-outer-spin-button {
+  -webkit-appearance: inner-spin-button !important;
+  opacity: 1;
+  height: 40px;
+  margin-left: 10px;
+}
+
+/* For Firefox */
+.time-input[type="number"] {
+  -moz-appearance: textfield;
+  padding-right: 5px;
+}
+
 .input-hint {
   font-family: 'Quicksand', 'Poppins', sans-serif;
   font-size: 13px;
