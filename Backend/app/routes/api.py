@@ -99,7 +99,7 @@ async def chat_with_gemini(chat_request: ChatRequest):
 
         return ChatResponse(
             response=response,
-            model_used="gemini-pro"
+            model_used="gemini-2.5-flash"
         )
     except Exception as e:
         logger.error(f"Error in chat: {str(e)}")

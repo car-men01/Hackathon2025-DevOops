@@ -1,8 +1,4 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import AgentExecutor, create_structured_chat_agent
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.memory import ConversationBufferMemory
-from langchain.tools import Tool
 from langchain.schema import HumanMessage, SystemMessage
 from app.core.config import settings
 from typing import Dict, Optional
@@ -24,10 +20,6 @@ class GeminiAgent:
         )
 
         self.system_prompt = system_prompt or self._default_system_prompt()
-        self.memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True
-        )
 
     def _default_system_prompt(self) -> str:
         """Default system prompt for the 20 Questions game."""
