@@ -35,15 +35,16 @@ async def create_lobby(lobby_data: LobbyCreate):
     The host provides their name, the secret concept, and optional context.
     Returns a 7-digit PIN that participants can use to join.
     """
+    print("Received request to create lobby")
     try:
         # Generate unique PIN
         pin = Lobby.generate_pin()
         while pin in game_master.lobbies:
             pin = Lobby.generate_pin()
-        
+        print("Generated unique PIN:", pin)
         # Create host user
         host = User(name=lobby_data.host_name)
-        
+        print("Host created with name:", host.name)
         # Create lobby instance with unique PIN, host, and concept
         lobby = Lobby(
             pin=pin,
@@ -53,9 +54,9 @@ async def create_lobby(lobby_data: LobbyCreate):
             timelimit=lobby_data.timelimit,
             context=lobby_data.context
         )
-        
+        print("Creating lobby with PIN:", lobby.pin)
         game_master.create_lobby(lobby)
-        
+        print("Lobby created with PIN:", lobby.pin)
         logger.info(f"Lobby created with PIN {lobby.pin} by host {host.name}")
         
         return LobbyCreateResponse(
@@ -81,7 +82,7 @@ async def join_lobby(join_data: ParticipantJoin):
         if not lobby:
             raise HTTPException(status_code=404, detail="Lobby not found with that PIN")
         
-        if lobby.start_time:
+        if lobby.start_time is not None:
             raise HTTPException(status_code=400, detail="Lobby has already started")
         
         # Create participant user
@@ -137,7 +138,7 @@ async def start_lobby(lobby_start: LobbyStart):
         
         return LobbyStartResponse(
             pin=lobby.pin,
-            lobby_started=True,
+            lobby_active=True,
             participants=lobby.get_participant_names()
         )
     except HTTPException:
@@ -167,8 +168,7 @@ async def get_lobby_info(pin: str, user_id: str):
             timelimit=lobby.timelimit,
             secret_concept=lobby.secret_concept if is_host else None,
             context=lobby.context if is_host else None,
-            lobby_started=lobby.lobby_started,
-            lobby_active=lobby.start_time
+            lobby_active=lobby.start_time is not None
         )
     except HTTPException:
         raise
@@ -197,7 +197,7 @@ async def reconnect_user(reconnect_data: UserReconnect):
                 user_id=lobby.host.user_id,
                 user_name=lobby.host.name,
                 is_host=True,
-                lobby_started=lobby.start_time,
+                lobby_active=lobby.start_time is not None,
                 participants=lobby.get_participant_names()
             )
         
@@ -209,7 +209,7 @@ async def reconnect_user(reconnect_data: UserReconnect):
                 user_id=participant.user_id,
                 user_name=participant.name,
                 is_host=False,
-                lobby_started=lobby.start_time,
+                lobby_active=lobby.start_time is not None,
                 participants=lobby.get_participant_names()
             )
         

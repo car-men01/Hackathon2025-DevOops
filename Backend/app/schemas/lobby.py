@@ -42,8 +42,7 @@ class LobbyInfo(BaseModel):
     timelimit: int
     secret_concept: Optional[str] = Field(None, description="Only visible to host")
     context: Optional[str] = Field(None, description="Only visible to host")
-    lobby_started: bool
-    lobby_active: bool
+    lobby_active: bool = Field(..., description="Whether the lobby has been started")
 
 
 class LobbyQuestion(BaseModel):
@@ -71,7 +70,7 @@ class UserReconnectResponse(BaseModel):
     user_id: str
     user_name: str
     is_host: bool
-    lobby_started: bool
+    lobby_active: bool = Field(..., description="Whether the lobby has been started")
     participants: List[str]
 
 
@@ -84,7 +83,7 @@ class LobbyStart(BaseModel):
 class LobbyStartResponse(BaseModel):
     """Schema for lobby start response."""
     pin: str
-    lobby_started: bool
+    lobby_active: bool = Field(..., description="Whether the lobby has been started")
     participants: List[str]
 
 
