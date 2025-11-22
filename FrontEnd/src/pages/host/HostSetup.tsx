@@ -17,6 +17,7 @@ export const HostSetup: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [lobbyCreated, setLobbyCreated] = useState(false);
+  const [showLobbyView, setShowLobbyView] = useState(false);
 
   // Debug: Log current lobby state
   useEffect(() => {
@@ -32,7 +33,7 @@ export const HostSetup: React.FC = () => {
 
   // Poll for participants joining
   useEffect(() => {
-    if (!currentLobby || !currentUser || lobbyCreated) {
+    if (!currentLobby || !currentUser || !lobbyCreated) {
       console.log('[HostSetup] Skipping poll:', {
         hasLobby: !!currentLobby,
         hasUser: !!currentUser,
@@ -71,102 +72,88 @@ export const HostSetup: React.FC = () => {
     return () => clearInterval(pollInterval);
   }, [currentLobby, currentUser, lobbyCreated, updateLobby]);
 
-  const handleStartGame = async () => {
-    console.log('[HostSetup] handleStartGame called - START');
-    console.log('[HostSetup] Validation check:', {
-      concept: concept.trim(),
-      topic: topic.trim(),
-      hasLobby: !!currentLobby,
-      hasUser: !!currentUser,
-      lobbyCode: currentLobby?.code
-    });
-
-    if (!concept.trim() || !topic.trim() || !currentLobby || !currentUser) {
-      console.log('[HostSetup] Validation failed, returning early');
+  const handleProceedToLobby = async () => {
+    if (!concept.trim() || !topic.trim() || !context.trim() || !timeLimit || !currentUser) {
+      setError('Please fill in all fields');
       return;
     }
 
-    console.log('[HostSetup] handleStartGame validation passed, proceeding...');
-
-    console.log('[HostSetup] Setting isLoading to true');
     setIsLoading(true);
     setError('');
 
     try {
-      console.log('[HostSetup] Checking lobby code:', currentLobby.code);
-      // If lobby not yet created on backend, create it first
-      if (currentLobby.code === 'TEMP') {
-        console.log('[HostSetup] Creating lobby on backend...');
-        console.log('[HostSetup] Calling gameService.createLobby with:', {
-          hostName: currentUser.name,
-          secretConcept: concept.trim(),
-          context: context.trim(),
-          topic: topic.trim(),
-          timeLimit: parseInt(timeLimit) * 60
-        });
-        
-        const createResponse = await gameService.createLobby(
-          currentUser.name,
-          concept.trim(),
-          context.trim(),
-          topic.trim(),
-          parseInt(timeLimit) * 60
-        );
-        console.log('[HostSetup] Lobby created, response:', createResponse);
+      console.log('[HostSetup] Creating lobby on backend...');
+      const createResponse = await gameService.createLobby(
+        currentUser.name,
+        concept.trim(),
+        context.trim(),
+        topic.trim(),
+        parseInt(timeLimit) * 60
+      );
+      console.log('[HostSetup] Lobby created, response:', createResponse);
 
-        const newLobby: LobbyType = {
-          code: createResponse.pin,
-          ownerId: createResponse.hostId,
-          users: [{ ...currentUser, id: createResponse.hostId }],
-          status: 'waiting',
-          questions: [],
-          maxQuestions: 10,
-          concept: concept.trim(),
-          context: context.trim(),
-          topic: topic.trim(),
-          timeLimit: parseInt(timeLimit) * 60,
-        };
+      const newLobby: LobbyType = {
+        code: createResponse.pin,
+        ownerId: createResponse.hostId,
+        users: [{ ...currentUser, id: createResponse.hostId }],
+        status: 'waiting',
+        questions: [],
+        maxQuestions: 10,
+        concept: concept.trim(),
+        context: context.trim(),
+        topic: topic.trim(),
+        timeLimit: parseInt(timeLimit) * 60,
+      };
 
-        console.log('[HostSetup] Setting new lobby:', newLobby);
-        setCurrentLobby(newLobby);
-        setLobbyCreated(true);
-        console.log('[HostSetup] Lobby created flag set to true');
-        
-        // Wait a moment for state to update
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Now start the lobby
-        console.log('[HostSetup] Starting lobby:', createResponse.pin);
-        await gameService.startLobby(createResponse.pin, createResponse.hostId);
-        console.log('[HostSetup] Lobby started successfully');
-        
-        // Navigate immediately after starting (no need to wait for state update)
-        navigate(`/host/game/${currentLobby.code}`);
-        console.log('[HostSetup] Navigating to host-game');
-        navigate('/host-game');
-      } else {
-        // Lobby already exists, just start it
-        console.log('[HostSetup] Lobby already exists, starting:', currentLobby.code);
-        await gameService.startLobby(
-          currentLobby.code, 
-          currentUser.id,
-          concept.trim(),
-          context.trim(),
-          topic.trim(),
-          parseInt(timeLimit) * 60
-        );
-        console.log('[HostSetup] Lobby started successfully');
-        
-        updateLobby({ 
-          status: 'playing',
-          concept: concept.trim(),
-          context: context.trim(),
-          topic: topic.trim(),
-          timeLimit: parseInt(timeLimit) * 60,
-        });
-        console.log('[HostSetup] Navigating to host-game');
-        navigate('/host-game');
-      }
+      setCurrentLobby(newLobby);
+      setLobbyCreated(true);
+      setShowLobbyView(true);
+    } catch (err: unknown) {
+      console.error('[HostSetup] Error creating lobby:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create lobby';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToFields = () => {
+    setShowLobbyView(false);
+  };
+
+  const handleStartGame = async () => {
+    console.log('[HostSetup] handleStartGame called - START');
+    
+    if (!currentLobby || !currentUser || currentLobby.code === 'TEMP') {
+      console.log('[HostSetup] Validation failed, returning early');
+      setError('Please create lobby first');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      console.log('[HostSetup] Starting lobby:', currentLobby.code);
+      await gameService.startLobby(
+        currentLobby.code, 
+        currentUser.id,
+        concept.trim(),
+        context.trim(),
+        topic.trim(),
+        parseInt(timeLimit) * 60
+      );
+      console.log('[HostSetup] Lobby started successfully');
+      
+      updateLobby({ 
+        status: 'playing',
+        concept: concept.trim(),
+        context: context.trim(),
+        topic: topic.trim(),
+        timeLimit: parseInt(timeLimit) * 60,
+      });
+      console.log('[HostSetup] Navigating to host-game');
+      navigate('/host-game');
     } catch (err: unknown) {
       console.error('[HostSetup] Error in handleStartGame:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to start game';
@@ -193,103 +180,129 @@ export const HostSetup: React.FC = () => {
       <div className="host-setup-container">
         <div className="setup-header">
           <h1>Setup Your Game</h1>
-          <p className="lobby-code">
-            Lobby Code: <span>{currentLobby.code}</span>
-          </p>
-          <button onClick={handleLeaveLobby} className="end-game-button">
-            Leave Lobby
-          </button>
+          {showLobbyView && (
+            <p className="lobby-code">
+              Lobby Code: <span>{currentLobby.code}</span>
+            </p>
+          )}
         </div>
 
         <div className="setup-mascot">
           <JimmyNarwhal state="waiting" />
         </div>
 
-        <div className="setup-form">
-          {error && <div className="error-message" style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
-          
-          <div className="form-group">
-            <label htmlFor="topic">Topic/Description *</label>
-            <input
-              id="topic"
-              type="text"
-              placeholder="e.g., The process by which plants convert sunlight into energy"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              className="setup-input"
-              disabled={isLoading}
-            />
-            <p className="input-hint">The description participants will see</p>
-          </div>
+        {!showLobbyView ? (
+          /* Fields View */
+          <div className="setup-form">
+            <div className="form-group">
+              <label htmlFor="topic">Topic/Description *</label>
+              <input
+                id="topic"
+                type="text"
+                placeholder="e.g., Biology"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                className="setup-input"
+                disabled={isLoading}
+              />
+              <p className="input-hint">The description participants will see</p>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="concept">Secret Word *</label>
-            <input
-              id="concept"
-              type="text"
-              placeholder="e.g., Photosynthesis, French Revolution..."
-              value={concept}
-              onChange={(e) => setConcept(e.target.value)}
-              className="setup-input"
-              disabled={isLoading}
-            />
-            <p className="input-hint">The word or concept participants need to guess</p>
-          </div>
+            <div className="form-group">
+              <label htmlFor="concept">Secret Word *</label>
+              <input
+                id="concept"
+                type="text"
+                placeholder="e.g., Photosynthesis"
+                value={concept}
+                onChange={(e) => setConcept(e.target.value)}
+                className="setup-input"
+                disabled={isLoading}
+              />
+              <p className="input-hint">The word or concept participants need to guess</p>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="context">Context/Clarification *</label>
-            <textarea
-              id="context"
-              placeholder="Add clarifications or hints..."
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              className="setup-textarea"
-              rows={3}
-              disabled={isLoading}
-            />
-            <p className="input-hint">Additional context for the game</p>
-          </div>
+            <div className="form-group">
+              <label htmlFor="context">Context/Clarification *</label>
+              <textarea
+                id="context"
+                placeholder="Add clarifications or hints..."
+                value={context}
+                onChange={(e) => setContext(e.target.value)}
+                className="setup-textarea"
+                rows={3}
+                disabled={isLoading}
+              />
+              <p className="input-hint">Additional context for the game</p>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="timeLimit">Available Time (minutes) *</label>
-            <input
-              id="timeLimit"
-              type="number"
-              min="1"
-              max="60"
-              placeholder="10"
-              value={timeLimit}
-              onChange={(e) => setTimeLimit(e.target.value)}
-              className="setup-input"
-              disabled={isLoading}
-            />
-            <p className="input-hint">Time limit for the game in minutes</p>
-          </div>
+            <div className="form-group">
+              <label htmlFor="timeLimit">Available Time (minutes) *</label>
+              <input
+                id="timeLimit"
+                type="number"
+                min="1"
+                max="60"
+                placeholder="10"
+                value={timeLimit}
+                onChange={(e) => setTimeLimit(e.target.value)}
+                className="setup-input time-input"
+                disabled={isLoading}
+              />
+              <p className="input-hint">Time limit for the game in minutes</p>
+            </div>
 
-          <div className="players-waiting">
-            <h3>Players in Lobby ({currentLobby.users.length})</h3>
-            <div className="players-list">
-              {currentLobby.users.map((user) => (
-                <div key={user.id} className="player-card">
-                  <div className="player-avatar">{user.name[0].toUpperCase()}</div>
-                  <span className="player-name">{user.name}</span>
-                  {user.role === 'host' && <span className="teacher-badge">Host</span>}
-                </div>
-              ))}
+            {error && <div className="error-message">{error}</div>}
+
+            <button
+              onClick={handleProceedToLobby}
+              className="proceed-button"
+              disabled={!concept.trim() || !topic.trim() || !context.trim() || !timeLimit || isLoading}
+            >
+              {isLoading ? 'Creating Lobby...' : 'Proceed to Lobby'}
+            </button>
+          </div>
+        ) : (
+          /* Lobby View */
+          <div className="lobby-view">
+            <div className="qr-code-placeholder">
+              <p>QR Code</p>
+              <p className="qr-hint">Coming Soon</p>
+            </div>
+
+            <div className="players-waiting">
+              <h3>Players in Lobby ({currentLobby.users.length})</h3>
+              <div className="players-list">
+                {currentLobby.users.map((user) => (
+                  <div key={user.id} className="player-card">
+                    <div className="player-avatar">{user.name[0].toUpperCase()}</div>
+                    <span className="player-name">{user.name}</span>
+                    {user.role === 'host' && <span className="teacher-badge">Host</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {error && <div className="error-message">{error}</div>}
+
+            <button
+              onClick={handleStartGame}
+              className="start-game-button"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Starting...' : 'Start Game'}
+            </button>
+
+            <div className="bottom-buttons">
+              <button onClick={handleBackToFields} className="back-button">
+                Back
+              </button>
+              <button onClick={handleLeaveLobby} className="leave-lobby-button">
+                Leave Lobby
+              </button>
             </div>
           </div>
-
-          <button
-            onClick={() => {
-              console.log('[HostSetup] Start Game button clicked!');
-              handleStartGame();
-            }}
-            className="start-game-button"
-            disabled={!concept.trim() || !topic.trim() || !context.trim() || !timeLimit || isLoading}
-          >
-            {isLoading ? 'Starting...' : 'Start Game'}
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
