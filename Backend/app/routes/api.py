@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+MAX_USERS = 6
 
 @router.post("/lobby/create", response_model=LobbyCreateResponse)
 async def create_lobby(lobby_data: LobbyCreate):
@@ -100,6 +101,11 @@ async def join_lobby(join_data: ParticipantJoin):
         
         if lobby.start_time is not None:
             raise HTTPException(status_code=400, detail="Lobby has already started")
+        
+        # Check user limit (host + participants)
+        current_user_count = 1 + len(lobby.participants)  # 1 for host + participants
+        if current_user_count >= MAX_USERS:
+            raise HTTPException(status_code=400, detail=f"Lobby is full (maximum {MAX_USERS} users)")
         
         # Create participant user
         participant = User(name=join_data.participant_name)
