@@ -78,12 +78,6 @@ export const Results: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleNewGame = () => {
-    setCurrentUser(null);
-    setCurrentLobby(null);
-    navigate('/');
-  };
-
   const handleBackToMenu = () => {
     localStorage.removeItem('gameUserData');
     setCurrentUser(null);
@@ -191,12 +185,6 @@ export const Results: React.FC = () => {
                   </div>
                 </div>
                 <div className="performance-details">
-                  <div className="detail-item">
-                    <span className="detail-label">Time Taken</span>
-                    <span className="detail-value">
-                      {formatTime(studentScores.find(s => s.id === currentUser.id)?.timeElapsed || 0)}
-                    </span>
-                  </div>
                   <div className="detail-item">
                     <span className="detail-label">Your Rank</span>
                     <span className="detail-value">
