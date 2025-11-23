@@ -109,3 +109,15 @@ export interface AskQuestionResponse {
   questions_remaining: number | null;
 }
 
+export interface LeaderboardEntry {
+  user_id: string;
+  name: string;
+  question_count: number;
+  guessed_correct: boolean;
+}
+
+export interface LeaderboardResponse {
+  pin: string;
+  leaderboard: LeaderboardEntry[];
+}
+

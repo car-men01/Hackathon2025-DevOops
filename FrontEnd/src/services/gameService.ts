@@ -9,7 +9,8 @@ import type {
   LobbyInfoResponse,
   AskQuestionRequest,
   AskQuestionResponse,
-  GenerateQRResponse
+  GenerateQRResponse,
+  LeaderboardResponse
 } from '../types';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api/v1';
@@ -143,6 +144,14 @@ class GameService {
       } as AskQuestionRequest),
     });
 
+    return data;
+  }
+
+  // Get leaderboard
+  async getLeaderboard(pin: string): Promise<LeaderboardResponse> {
+    const data = await this.fetchAPI<LeaderboardResponse>(`/lobby/${pin}/leaderboard`, {
+      method: 'GET',
+    });
     return data;
   }
 
