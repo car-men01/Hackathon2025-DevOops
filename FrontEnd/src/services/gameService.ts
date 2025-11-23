@@ -57,12 +57,6 @@ class GameService {
     return data.qr_code_data_url;
   }
 
-  async getLeaderboard(pin: string): Promise<any> {
-    // We pass limit=-1 to get ALL users for the PDF report
-    const response = await this.fetchAPI<LeaderboardResponse>(`/lobby/${pin}/leaderboard?limit=-1`); 
-    return response.leaderboard; 
-  }
-
   // Create a lobby (for host)
   async createLobby(
     hostName: string, 

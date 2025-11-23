@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useGame } from './useGame';
 import { gameService } from '../services';
-import type { User, LobbyType, UserRole } from '../types';
+import type { User, LobbyType, UserRole, Question } from '../types';
 
 interface StoredUserData {
   userId: string;
@@ -23,7 +23,7 @@ export const useRestoreSession = () => {
   const { currentUser, currentLobby, setCurrentUser, setCurrentLobby, updateLobby } = useGame();
   const isRestoringRef = useRef(false);
   const pollIntervalRef = useRef<number | null>(null);
-  
+
   // Refs to hold latest state for polling
   const currentUserRef = useRef(currentUser);
   const currentLobbyRef = useRef(currentLobby);
@@ -204,14 +204,18 @@ export const useRestoreSession = () => {
         console.log('[useRestoreSession] 📡 Polling lobby info...');
         const lobbyInfo = await gameService.getLobbyInfo(lobby.code, user.id);
         
-        // Update users list
-        const users = gameService.convertParticipantsToUsers(
+        // Update users list - only if different to prevent flickering
+        const newUsers = gameService.convertParticipantsToUsers(
           lobbyInfo.participants,
           lobbyInfo.host_name,
           user.id,
           user.name,
           user.role === 'host'
         );
+
+        // Prevent flickering: if we have participants but the update shows none (only host),
+        // ignore the user update to prevent clearing the UI temporarily.
+        const users = (lobby.users.length > 1 && newUsers.length === 1) ? lobby.users : newUsers;
 
         // Determine new status
         const newStatus = lobbyInfo.start_time ? 'playing' : 'waiting';
@@ -232,18 +236,65 @@ export const useRestoreSession = () => {
           }
         }
 
-        // Update lobby
-        updateLobby({
-          users,
+        // Build update object
+        const updates: Partial<LobbyType> = {
           status: newStatus,
           start_time: lobbyInfo.start_time,
           concept: lobbyInfo.secret_concept,
           context: lobbyInfo.context,
           topic: lobbyInfo.topic,
           timeLimit: lobbyInfo.timelimit,
-        });
+        };
 
-        console.log('[useRestoreSession] ✅ Lobby info updated');
+        // Only update users if they actually changed
+        if (JSON.stringify(users) !== JSON.stringify(lobby.users)) {
+          updates.users = users;
+        }
+
+        // For hosts, also update questions if available
+        if (user.role === 'host' && lobbyInfo.questions && lobbyInfo.questions.length > 0) {
+          const incomingQuestions = lobbyInfo.questions.map((q) => ({
+            id: q.question_id,
+            userId: q.user_id,
+            userName: q.user_name,
+            question: q.question,
+            answer: q.answer as Question['answer'],
+            timestamp: q.timestamp
+          }));
+          
+          // Append new questions to existing ones instead of replacing
+          const existingQuestions = lobby.questions || [];
+          const existingIds = new Set(existingQuestions.map(q => q.id));
+          
+          // Only add questions that don't already exist
+          const questionsToAdd = incomingQuestions.filter((q) => !existingIds.has(q.id));
+          
+          // Also update existing questions if their answer changed
+          const updatedExisting = existingQuestions.map(existingQ => {
+            const incoming = incomingQuestions.find((q) => q.id === existingQ.id);
+            if (incoming && incoming.answer !== existingQ.answer) {
+              return incoming;
+            }
+            return existingQ;
+          });
+          
+          const newQuestions = [...updatedExisting, ...questionsToAdd];
+          
+          // Only update if questions actually changed
+          if (newQuestions.length !== existingQuestions.length || 
+              newQuestions.some((q, i) => {
+                const curr = existingQuestions[i];
+                return !curr || q.id !== curr.id || q.answer !== curr.answer;
+              })) {
+            updates.questions = newQuestions;
+          }
+        }
+
+        // Only update if something actually changed
+        if (Object.keys(updates).length > 0) {
+          updateLobby(updates);
+          console.log('[useRestoreSession] ✅ Lobby info updated');
+        }
 
       } catch (error) {
         console.error('[useRestoreSession] ❌ Error polling lobby info:', error);
