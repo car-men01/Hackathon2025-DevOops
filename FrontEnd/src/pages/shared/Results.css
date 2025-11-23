@@ -1,3 +1,6 @@
+/* =========================================
+   BASE STYLES (Desktop First)
+   ========================================= */
 .results-page {
   min-height: 100vh;
   display: flex;
@@ -6,7 +9,9 @@
   background: linear-gradient(135deg, #F0F8FF 0%, #E0F2FF 100%);
   padding: 20px;
   position: relative;
-  overflow: hidden;
+  /* Changed from hidden to auto to allow scrolling on long result pages */
+  overflow-y: auto; 
+  overflow-x: hidden;
 }
 
 /* Animated Narwhal */
@@ -36,95 +41,23 @@
   border-radius: 50%;
   animation: float-up linear infinite;
   z-index: 0;
+  pointer-events: none; /* Prevent clicking bubbles */
 }
 
-.bubble-1 {
-  width: 60px;
-  height: 60px;
-  left: 10%;
-  bottom: -60px;
-  animation-duration: 8s;
-  animation-delay: 0s;
-}
-
-.bubble-2 {
-  width: 40px;
-  height: 40px;
-  left: 20%;
-  bottom: -40px;
-  animation-duration: 10s;
-  animation-delay: 2s;
-}
-
-.bubble-3 {
-  width: 80px;
-  height: 80px;
-  left: 80%;
-  bottom: -80px;
-  animation-duration: 12s;
-  animation-delay: 1s;
-}
-
-.bubble-4 {
-  width: 50px;
-  height: 50px;
-  left: 90%;
-  bottom: -50px;
-  animation-duration: 9s;
-  animation-delay: 3s;
-}
-
-.bubble-5 {
-  width: 70px;
-  height: 70px;
-  left: 5%;
-  bottom: -70px;
-  animation-duration: 11s;
-  animation-delay: 4s;
-}
-
-.bubble-6 {
-  width: 45px;
-  height: 45px;
-  left: 15%;
-  bottom: -45px;
-  animation-duration: 13s;
-  animation-delay: 1.5s;
-}
-
-.bubble-7 {
-  width: 55px;
-  height: 55px;
-  left: 85%;
-  bottom: -55px;
-  animation-duration: 10.5s;
-  animation-delay: 2.5s;
-}
-
-.bubble-8 {
-  width: 65px;
-  height: 65px;
-  left: 75%;
-  bottom: -65px;
-  animation-duration: 14s;
-  animation-delay: 0.5s;
-}
+.bubble-1 { width: 60px; height: 60px; left: 10%; bottom: -60px; animation-duration: 8s; animation-delay: 0s; }
+.bubble-2 { width: 40px; height: 40px; left: 20%; bottom: -40px; animation-duration: 10s; animation-delay: 2s; }
+.bubble-3 { width: 80px; height: 80px; left: 80%; bottom: -80px; animation-duration: 12s; animation-delay: 1s; }
+.bubble-4 { width: 50px; height: 50px; left: 90%; bottom: -50px; animation-duration: 9s; animation-delay: 3s; }
+.bubble-5 { width: 70px; height: 70px; left: 5%; bottom: -70px; animation-duration: 11s; animation-delay: 4s; }
+.bubble-6 { width: 45px; height: 45px; left: 15%; bottom: -45px; animation-duration: 13s; animation-delay: 1.5s; }
+.bubble-7 { width: 55px; height: 55px; left: 85%; bottom: -55px; animation-duration: 10.5s; animation-delay: 2.5s; }
+.bubble-8 { width: 65px; height: 65px; left: 75%; bottom: -65px; animation-duration: 14s; animation-delay: 0.5s; }
 
 @keyframes float-up {
-  0% {
-    bottom: -100px;
-    opacity: 0;
-  }
-  10% {
-    opacity: 0.6;
-  }
-  90% {
-    opacity: 0.6;
-  }
-  100% {
-    bottom: 110vh;
-    opacity: 0;
-  }
+  0% { bottom: -100px; opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { bottom: 110vh; opacity: 0; }
 }
 
 .results-container {
@@ -137,6 +70,8 @@
   position: relative;
   z-index: 2;
   backdrop-filter: blur(10px);
+  /* Ensure container doesn't overflow horizontally */
+  box-sizing: border-box;
 }
 
 .results-header {
@@ -196,6 +131,8 @@
   background: #F0F8FF;
   border-radius: 16px;
   overflow: hidden;
+  /* Crucial for mobile: allow horizontal scroll if table is too wide */
+  overflow-x: auto;
 }
 
 .results-table-header,
@@ -204,6 +141,8 @@
   grid-template-columns: 80px 1fr 120px 100px;
   padding: 16px 20px;
   align-items: center;
+  /* Ensure it doesn't collapse too small on mobile */
+  min-width: 600px; 
 }
 
 .results-table-header {
@@ -222,36 +161,15 @@
   transition: background 0.2s ease;
 }
 
-.results-table-row:last-child {
-  border-bottom: none;
-}
+.results-table-row:last-child { border-bottom: none; }
+.results-table-row:hover { background: white; }
 
-.results-table-row:hover {
-  background: white;
-}
+.winner-row { background: #FFF8DC; font-weight: 600; }
+.winner-row:hover { background: #FFECB3; }
 
-.winner-row {
-  background: #FFF8DC;
-  font-weight: 600;
-}
-
-.winner-row:hover {
-  background: #FFECB3;
-}
-
-.col-rank {
-  font-size: 20px;
-  text-align: center;
-}
-
-.col-name {
-  font-weight: 600;
-}
-
-.col-questions,
-.col-time {
-  text-align: center;
-}
+.col-rank { font-size: 20px; text-align: center; }
+.col-name { font-weight: 600; }
+.col-questions, .col-time { text-align: center; }
 
 .col-time {
   font-weight: 700;
@@ -414,12 +332,17 @@
   font-family: 'Quicksand', 'Poppins', sans-serif;
   font-size: 16px;
   color: #333;
+  /* Handle long names */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .leaderboard-stats {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .leaderboard-questions,
@@ -442,18 +365,22 @@
   margin-top: 30px;
 }
 
-.primary-action-button {
-  flex: 1;
+.primary-action-button, .secondary-action-button, .download-action-button {
   font-family: 'Quicksand', 'Poppins', sans-serif;
   padding: 18px;
-  border: none;
   border-radius: 16px;
-  background: #1E90FF;
-  color: white;
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
+  text-align: center;
+}
+
+.primary-action-button {
+  flex: 1;
+  border: none;
+  background: #1E90FF;
+  color: white;
   box-shadow: 0 4px 12px rgba(30, 144, 255, 0.3);
 }
 
@@ -465,41 +392,25 @@
 
 .secondary-action-button {
   flex: 1;
-  font-family: 'Quicksand', 'Poppins', sans-serif;
-  padding: 18px;
   border: 2px solid #1E90FF;
-  border-radius: 16px;
   background: white;
   color: #1E90FF;
-  font-size: 18px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
-.secondary-action-button:hover {
-  background: #F0F8FF;
-}
-
-/* Add to Results.css */
+.secondary-action-button:hover { background: #F0F8FF; }
 
 .download-action-link {
   flex: 1;
   text-decoration: none;
+  display: block;
 }
 
 .download-action-button {
   width: 100%;
-  font-family: 'Quicksand', 'Poppins', sans-serif;
-  padding: 18px;
   border: none;
-  border-radius: 16px;
-  background: #00C853; /* A nice success green */
+  background: #00C853;
   color: white;
-  font-size: 18px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(0, 200, 83, 0.3);
 }
 
@@ -514,4 +425,75 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+
+/* =========================================
+   MOBILE OPTIMIZATION (BREAKPOINT: 768px)
+   ========================================= */
+
+@media (max-width: 768px) {
+  .results-page {
+    padding: 10px;
+    align-items: flex-start; /* Allow top alignment so we can scroll down */
+  }
+
+  .results-container {
+    padding: 20px;
+    margin-top: 20px;
+  }
+
+  /* Resize Fonts */
+  .results-header h1 { font-size: 28px; }
+  .winner-announcement h2 { font-size: 24px; }
+  .winner-concept { font-size: 16px; }
+  
+  /* Resize Narwhal */
+  .narwhal-animated-results {
+    width: 180px;
+    height: 180px;
+  }
+
+  /* Stack Game Stats (4 cols -> 2 cols) */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  
+  .stat-value { font-size: 24px; }
+  .stat-item { padding: 15px; }
+
+  /* Student Score Card */
+  .personal-score-card { padding: 20px; }
+  .score-circle { width: 140px; height: 140px; }
+  .score-number { font-size: 48px; }
+  
+  .performance-details {
+    gap: 15px;
+  }
+  .detail-value { font-size: 20px; }
+
+  /* Leaderboard */
+  .leaderboard-item {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .leaderboard-rank { font-size: 18px; width: 30px; }
+  .leaderboard-name { font-size: 14px; }
+  .leaderboard-stats { gap: 8px; }
+  .leaderboard-questions, .leaderboard-time { font-size: 14px; }
+
+  /* Actions - Stack vertically */
+  .results-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .primary-action-button, 
+  .secondary-action-button, 
+  .download-action-button {
+    padding: 14px;
+    font-size: 16px;
+    width: 100%;
+  }
 }
