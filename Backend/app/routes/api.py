@@ -14,6 +14,8 @@ from app.schemas.lobby import (
     LobbyStartResponse,
     LobbyDelete,
     LobbyInfo,
+    QuestionInfo,
+    ParticipantDetail,
     UserReconnect,
     UserReconnectResponse,
     LobbyDeleteResponse,
@@ -284,6 +286,39 @@ async def get_lobby_info(pin: str, user_id: str):
         
         logger.info(f"[GET_LOBBY_INFO] Lobby topic: {lobby.topic}")
         
+        questions = []
+        participants_details = []
+        if is_host:
+            # Collect participants details
+            participants_details = [
+                ParticipantDetail(user_id=p.user_id, name=p.name)
+                for p in lobby.participants.values()
+            ]
+
+            # Collect questions from all participants
+            for participant in lobby.participants.values():
+                for q in participant.get_all_questions():
+                    questions.append(QuestionInfo(
+                        question_id=q.question_id,
+                        user_id=participant.user_id,
+                        user_name=participant.name,
+                        question=q.message,
+                        answer=q.answer,
+                        timestamp=q.timestamp.timestamp() * 1000
+                    ))
+            # Also check host questions if any
+            for q in lobby.host.get_all_questions():
+                 questions.append(QuestionInfo(
+                        question_id=q.question_id,
+                        user_id=lobby.host.user_id,
+                        user_name=lobby.host.name,
+                        question=q.message,
+                        answer=q.answer,
+                        timestamp=q.timestamp.timestamp() * 1000
+                    ))
+            
+            questions.sort(key=lambda x: x.timestamp)
+
         response = LobbyInfo(
             pin=lobby.pin,
             host_name=lobby.host.name,
@@ -293,7 +328,8 @@ async def get_lobby_info(pin: str, user_id: str):
             start_time=lobby.start_time.isoformat() if lobby.start_time else None,
             secret_concept=lobby.secret_concept if is_host else None,
             context=lobby.context if is_host else None,
-            lobby_active=lobby.start_time is not None
+            questions=questions if is_host else None,
+            participants_details=participants_details if is_host else None
         )
         logger.info(f"[GET_LOBBY_INFO] Returning response with topic: {response.topic}")
         logger.info(f"[GET_LOBBY_INFO] Full response: {response}")

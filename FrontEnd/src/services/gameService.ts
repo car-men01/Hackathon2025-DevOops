@@ -202,6 +202,36 @@ class GameService {
     return users;
   }
 
+  // Helper: Convert backend participant details to User objects
+  convertParticipantDetailsToUsers(
+    details: { user_id: string; name: string }[],
+    hostName: string,
+    currentUserId: string,
+    isHost: boolean
+  ): User[] {
+    const users: User[] = [];
+    
+    // Add host
+    users.push({
+      id: isHost ? currentUserId : 'host-id',
+      name: hostName,
+      role: 'host',
+      score: 0,
+    });
+
+    // Add participants
+    details.forEach((p) => {
+      users.push({
+        id: p.user_id,
+        name: p.name,
+        role: 'participant',
+        score: 0,
+      });
+    });
+
+    return users;
+  }
+
   // Calculate score based on questions used
   calculateScore(questionsUsed: number): number {
     return Math.max(100 - questionsUsed * 10, 0);

@@ -45,6 +45,22 @@ class ParticipantLeaveResponse(BaseModel):
     message: str = Field(..., description="Confirmation message")
 
 
+class QuestionInfo(BaseModel):
+    """Schema for question information in lobby info."""
+    question_id: str
+    user_id: str
+    user_name: str
+    question: str
+    answer: Optional[str]
+    timestamp: float
+
+
+class ParticipantDetail(BaseModel):
+    """Schema for participant details."""
+    user_id: str
+    name: str
+
+
 class LobbyInfo(BaseModel):
     """Schema for lobby information."""
     pin: str
@@ -55,6 +71,8 @@ class LobbyInfo(BaseModel):
     start_time: Optional[str] = Field(None, description="ISO datetime when lobby started")
     timelimit: int = Field(..., description="Time limit in seconds")
     topic: str = Field(..., description="Topic/description visible to all participants")
+    questions: Optional[List[QuestionInfo]] = Field(None, description="List of questions, only visible to host")
+    participants_details: Optional[List[ParticipantDetail]] = Field(None, description="Details of participants including IDs, only visible to host")
 
 
 class LobbyQuestion(BaseModel):
