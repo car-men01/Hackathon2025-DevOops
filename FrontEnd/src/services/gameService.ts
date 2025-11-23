@@ -153,6 +153,14 @@ class GameService {
     return data;
   }
 
+  // Get leaderboard
+  async getLeaderboard(pin: string): Promise<LeaderboardResponse> {
+    const data = await this.fetchAPI<LeaderboardResponse>(`/lobby/${pin}/leaderboard`, {
+      method: 'GET',
+    });
+    return data;
+  }
+
   // Helper: Convert backend participants list to User objects
   convertParticipantsToUsers(
     participants: string[],

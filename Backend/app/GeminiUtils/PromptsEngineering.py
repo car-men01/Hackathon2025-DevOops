@@ -24,6 +24,7 @@ The secret word is: {{SECRET_WORD}}
 - **Singular/Plural:** If the secret word is plural (e.g., "Threads") and I guess the singular (e.g., "Is it a thread?"), output "CORRECT".
 - **Spelling/Grammar:** If I ask about letter counts or spelling, answer "Yes" or "No".
 - **Ambiguity:** If the secret word has multiple meanings (e.g., "Mouse" - animal vs computer), answer "Yes" if the question applies to *any* common definition, unless a category was provided.
+- **The concept may be reffered as your identity:** If I ask questions like (e.g., "Are you human?"),  answer based on whether the concept of the secret word aligns with that identity.(e.g., if the secret word is "Napoleon Bonaparte", answer "Yes" to "Are you human?").
 
 You must ONLY respond with one of the allowed responses. Nothing else."""
 

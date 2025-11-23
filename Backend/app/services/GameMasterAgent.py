@@ -110,11 +110,6 @@ class GameMasterAgent:
         1. Users who guessed CORRECT (sorted by total questions ascending)
         2. Other users (sorted by number of "Yes" answers descending)
         
-        Returns top 10 users maximum.
-
-        Args:
-            pin: Lobby PIN
-
         Returns:
             List of user dictionaries with name and question count, or None if lobby not found
         """
@@ -156,8 +151,8 @@ class GameMasterAgent:
         # Extract entries from others
         sorted_others = [x[1] for x in others]
         
-        # Combine and take top 10
-        leaderboard = (winners + sorted_others)[:10]
+        # Combine
+        leaderboard = winners + sorted_others
         
         return leaderboard
 
