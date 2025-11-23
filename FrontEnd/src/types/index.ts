@@ -110,14 +110,15 @@ export interface AskQuestionResponse {
 }
 
 export interface LeaderboardEntry {
-  user_id: string;
-  name: string;
-  question_count: number;
-  guessed_correct: boolean;
+    user_id: string;
+    name: string;
+    question_count: number;
+    guessed_correct: boolean;
 }
 
-export interface LeaderboardResponse {
-  pin: string;
-  leaderboard: LeaderboardEntry[];
+
+export interface LeaderboardResponse{
+    pin: string;
+    leaderboard: LeaderboardEntry[];
 }
 

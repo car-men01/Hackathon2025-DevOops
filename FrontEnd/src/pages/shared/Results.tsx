@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
 import { PDFDownloadLink } from '@react-pdf/renderer';
-import { GameReportPdf } from './GameReportPdf'; // Import the file created above
 import { gameService } from '../../services/gameService';
+import { GameReportPdf } from './GameReportPdf';
 import type { LeaderboardEntry } from '../../types';
 import './Results.css';
 
@@ -12,6 +12,10 @@ export const Results: React.FC = () => {
   const { currentUser, currentLobby, setCurrentUser, setCurrentLobby } = useGame();
   const [narwhalFrame, setNarwhalFrame] = useState(0);
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
+
+  // State for the official API data for the PDF
+  const [pdfData, setPdfData] = useState<any[]>([]); 
+  const [isPdfReady, setIsPdfReady] = useState(false);
 
   const narwhalFrames = [
     '/narwal_animation_split/00.jpg',
@@ -28,11 +32,52 @@ export const Results: React.FC = () => {
     '/narwal_animation_split/32.jpg',
   ];
 
+  // 1. Fetch Official Leaderboard for PDF
   useEffect(() => {
-    // Play celebration sounds when page loads
+    const fetchLeaderboardForPdf = async () => {
+      if (!currentLobby?.code) return;
+
+      try {
+        console.log('[Results] Fetching leaderboard for PDF generation...');
+        const data = await gameService.getLeaderboard(currentLobby.code);
+        console.log('[Results] Leaderboard data for PDF:', data);
+
+        // Determine if 'data' is the array itself, or if it's inside 'data.leaderboard'
+        let listToMap: any[] = [];
+        
+        if (Array.isArray(data)) {
+            // Case 1: The service returned the array directly
+            listToMap = data;
+        } else if (data && Array.isArray(data.leaderboard)) {
+            // Case 2: The service returned { pin: "...", leaderboard: [...] }
+            listToMap = data.leaderboard;
+        } else {
+            console.warn("Unexpected leaderboard data structure:", data);
+            return;
+        }
+
+        // Map Python API response (snake_case) to PDF props (camelCase)
+        const mappedData = listToMap.map((entry: any) => ({
+          id: entry.user_id || Math.random(),
+          name: entry.name,
+          questionsUsed: entry.question_count,
+          timeElapsed: entry.time_elapsed
+        }));
+
+        setPdfData(mappedData);
+        setIsPdfReady(true);
+      } catch (error) {
+        console.error("Failed to fetch leaderboard for PDF:", error);
+      }
+    };
+
+    fetchLeaderboardForPdf();
+  }, [currentLobby?.code]);
+
+  // 2. Sounds and Animation
+  useEffect(() => {
     const playSounds = async () => {
       try {
-        // Play "Yay!" sound 
         const yaySoundPath = '/sounds/yay.mp3';
         const yayAudio = new Audio(yaySoundPath);
         await yayAudio.play();
@@ -43,7 +88,6 @@ export const Results: React.FC = () => {
 
     playSounds();
 
-    // Narwhal animation timer - cycle through frames every 4 seconds
     const frameTimer = setInterval(() => {
       setNarwhalFrame(prev => (prev + 1) % narwhalFrames.length);
     }, 4000);
@@ -77,7 +121,7 @@ export const Results: React.FC = () => {
   const isTeacher = currentUser.role === 'host';
   const students = currentLobby.users.filter(u => u.role === 'participant');
   
-  // Calculate scores for each student based on questions (primary) and time (secondary)
+  // Local scores for immediate HTML display (Client-side calculation)
   const studentScores = students.map(student => {
     const studentQuestions = currentLobby.questions.filter(q => q.userId === student.id);
     const questionsUsed = studentQuestions.length;
@@ -104,6 +148,9 @@ export const Results: React.FC = () => {
   });
 
   const winner = currentLobby.winner || studentScores[0];
+  
+  // Determine winner based on API data for PDF consistency
+  const apiWinner = pdfData.length > 0 ? pdfData[0] : null;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -133,7 +180,6 @@ export const Results: React.FC = () => {
         <div className="results-header">
           <h1>Game Over!</h1>
           
-          {/* Animated Narwhal */}
           <div className="narwhal-celebration">
             <img 
               src={narwhalFrames[narwhalFrame]} 
@@ -264,25 +310,31 @@ export const Results: React.FC = () => {
           
           {isTeacher && (
             <>
-               {/* PDF Download Button */}
-              <PDFDownloadLink
-                document={
-                  <GameReportPdf 
-                    students={studentScores} 
-                    winner={winner} 
-                    concept={currentLobby.concept || "Unknown Concept"}
-                  />
-                }
-                fileName={`game_report_${new Date().toISOString().slice(0,10)}.pdf`}
-                className="download-action-link"
-              >
-                 {/* @ts-ignore */}
-                {({ loading }) => (
-                  <button className="download-action-button" disabled={loading}>
-                    {loading ? 'Generating...' : 'Download Report'}
-                  </button>
-                )}
-              </PDFDownloadLink>
+              {/* PDF Download Button - Shows Loading state until API data arrives */}
+              {isPdfReady ? (
+                <PDFDownloadLink
+                  document={
+                    <GameReportPdf 
+                      students={pdfData} // Uses fetched API data
+                      winner={apiWinner} // Uses winner from API data
+                      concept={currentLobby.concept || "Unknown Concept"}
+                    />
+                  }
+                  fileName={`game_report_${new Date().toISOString().slice(0,10)}.pdf`}
+                  className="download-action-link"
+                >
+                  {/* @ts-ignore */}
+                  {({ loading }) => (
+                    <button className="download-action-button" disabled={loading}>
+                      {loading ? 'Generating...' : 'Download Report'}
+                    </button>
+                  )}
+                </PDFDownloadLink>
+              ) : (
+                <button className="download-action-button" disabled>
+                   Loading Data...
+                </button>
+              )}
 
               <button onClick={handleNewGame} className="secondary-action-button">
                 New Game
