@@ -34,6 +34,8 @@ export interface LobbyType {
   start_time?: string;
 }
 
+export type Lobby = LobbyType;
+
 export interface GameState {
   currentUser: User | null;
   currentLobby: LobbyType | null;
