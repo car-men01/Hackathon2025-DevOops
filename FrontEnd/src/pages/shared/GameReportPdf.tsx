@@ -1,15 +1,9 @@
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 
-// 1. Register Font Correctly
-// We create a family named 'CustomHelvetica' and define the bold font source for it.
-Font.register({
-  family: 'CustomHelvetica',
-  fonts: [
-    { src: 'https://fonts.gstatic.com/s/helveticaneue/5.13.0/HelveticaNeue-Bold.ttf', fontWeight: 'bold' },
-    // You can add 'fontWeight: normal' src here if you needed it
-  ],
-});
+// 1. REMOVED Font.register
+// We don't need to register standard fonts like 'Helvetica'. 
+// It is built-in to PDF readers.
 
 const styles = StyleSheet.create({
   page: { 
@@ -26,36 +20,35 @@ const styles = StyleSheet.create({
     color: '#1E90FF', 
     marginBottom: 10, 
     fontWeight: 'bold',
-    fontFamily: 'CustomHelvetica' // Use registered font
+    fontFamily: 'Helvetica' // Use built-in font
   },
   subtitle: { 
     fontSize: 14, 
     color: '#666', 
-    marginBottom: 5 
+    marginBottom: 5,
+    fontFamily: 'Helvetica'
   },
   
-  // 2. Fix Winner Box Layout
   winnerBox: {
     backgroundColor: '#FFD700',
     padding: 15,
     borderRadius: 8,
     marginVertical: 15,
-    // These lines fix the alignment and overlapping:
     flexDirection: 'row', 
     justifyContent: 'center',
     alignItems: 'center',
   },
   
-  // 3. Separate Styles for Emoji and Text
   winnerEmoji: {
-    fontSize: 24, // Slightly larger for the trophy
-    marginRight: 10, // Space between trophy and text
+    fontSize: 24, 
+    marginRight: 10, 
+    fontFamily: 'Helvetica'
   },
   winnerText: { 
     fontSize: 18, 
     color: '#FFF', 
     fontWeight: 'bold',
-    fontFamily: 'CustomHelvetica'
+    fontFamily: 'Helvetica' // Use built-in font
   },
 
   // Table Styles
@@ -95,12 +88,13 @@ const styles = StyleSheet.create({
     fontSize: 12, 
     fontWeight: 'bold', 
     color: '#FFF',
-    fontFamily: 'CustomHelvetica'
+    fontFamily: 'Helvetica' // Use built-in font
   },
   tableCell: { 
     margin: 5, 
     fontSize: 10, 
-    color: '#333' 
+    color: '#333',
+    fontFamily: 'Helvetica' // Use built-in font
   }
 });
 
@@ -124,8 +118,6 @@ export const GameReportPdf: React.FC<PdfProps> = ({ students, winner, concept })
       {/* Winner Highlight */}
       {winner && (
         <View style={styles.winnerBox}>
-          {/* 4. Separate the Emoji and Text into different nodes to prevent overlap */}
-          <Text style={styles.winnerEmoji}>🏆</Text>
           <Text style={styles.winnerText}>Winner: {winner.name}</Text>
         </View>
       )}
