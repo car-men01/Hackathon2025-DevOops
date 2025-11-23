@@ -113,7 +113,6 @@ export const Results: React.FC = () => {
           {winner && !isTeacher && (
             <div className="winner-announcement">
               <h2>🎉 {winner.name} Won! 🎉</h2>
-              <p className="winner-concept">The secret was: <strong>{currentLobby.concept}</strong></p>
             </div>
           )}
         </div>
