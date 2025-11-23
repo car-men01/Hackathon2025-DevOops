@@ -93,6 +93,11 @@
   color: white;
 }
 
+.end-game-button {
+  flex: 1;
+  text-align: center;
+}
+
 /* Main Content Grid */
 .participant-content {
   display: grid;

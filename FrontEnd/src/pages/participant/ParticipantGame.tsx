@@ -282,7 +282,7 @@ export const ParticipantGame: React.FC = () => {
                     <div className="participant-info">
                       <div className="participant-name">
                         {user.name}
-                        {isCurrentUser && <span className="you-badge">You</span>}
+                        {isCurrentUser && <span className="you-badge"> (You)</span>}
                       </div>
                     </div>
                   </div>
