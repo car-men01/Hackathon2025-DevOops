@@ -33,6 +33,34 @@ class ParticipantJoinResponse(BaseModel):
     participants: List[str] = Field(..., description="List of all participants in the lobby")
 
 
+class ParticipantLeave(BaseModel):
+    """Schema for a participant leaving a lobby."""
+    pin: str = Field(..., description="7-digit PIN of the lobby to leave")
+    user_id: str = Field(..., description="User's unique identifier")
+
+
+class ParticipantLeaveResponse(BaseModel):
+    """Schema for participant leave response."""
+    pin: str
+    message: str = Field(..., description="Confirmation message")
+
+
+class QuestionInfo(BaseModel):
+    """Schema for question information in lobby info."""
+    question_id: str
+    user_id: str
+    user_name: str
+    question: str
+    answer: Optional[str]
+    timestamp: float
+
+
+class ParticipantDetail(BaseModel):
+    """Schema for participant details."""
+    user_id: str
+    name: str
+
+
 class LobbyInfo(BaseModel):
     """Schema for lobby information."""
     pin: str
@@ -43,6 +71,8 @@ class LobbyInfo(BaseModel):
     start_time: Optional[str] = Field(None, description="ISO datetime when lobby started")
     timelimit: int = Field(..., description="Time limit in seconds")
     topic: str = Field(..., description="Topic/description visible to all participants")
+    questions: Optional[List[QuestionInfo]] = Field(None, description="List of questions, only visible to host")
+    participants_details: Optional[List[ParticipantDetail]] = Field(None, description="Details of participants including IDs, only visible to host")
 
 
 class LobbyQuestion(BaseModel):
@@ -90,6 +120,12 @@ class LobbyStartResponse(BaseModel):
     pin: str
     start_time: str = Field(..., description="ISO datetime when lobby started")
     participants: List[str]
+
+
+class LobbyDelete(BaseModel):
+    """Schema for deleting a lobby."""
+    pin: str = Field(..., description="7-digit PIN of the lobby to delete")
+    host_id: str = Field(..., description="Host's unique identifier for authentication")
 
 
 class LobbyDeleteResponse(BaseModel):

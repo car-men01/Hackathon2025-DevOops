@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../hooks/useGame';
 import type { Question } from '../../types';
 import { gameService } from '../../services';
 import './ParticipantGame.css';
@@ -15,6 +15,8 @@ export const ParticipantGame: React.FC = () => {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [totalTimeLimit, setTotalTimeLimit] = useState(0);
   const [narwhalFrame, setNarwhalFrame] = useState(0);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const conversationLogRef = React.useRef<HTMLDivElement>(null);
 
   const narwhalFrames = [
     '/narwal_animation_split/00.jpg',
@@ -127,8 +129,15 @@ export const ParticipantGame: React.FC = () => {
         updateLobby({ 
           users
         });
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('Error polling lobby info:', err);
+        // If lobby not found (404), it means host deleted it
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (errorMessage.includes('404') || errorMessage.includes('Lobby not found')) {
+          console.log('[ParticipantGame] Lobby deleted by host, redirecting to home');
+          localStorage.removeItem('gameUserData');
+          navigate('/');
+        }
       }
     }, 3000); // Poll every 3 seconds
 
@@ -169,6 +178,13 @@ export const ParticipantGame: React.FC = () => {
       addQuestion(newQuestion);
       setQuestionText('');
 
+      // Auto-scroll to bottom after adding question
+      setTimeout(() => {
+        if (conversationLogRef.current) {
+          conversationLogRef.current.scrollTop = conversationLogRef.current.scrollHeight;
+        }
+      }, 100);
+
       // Check if the answer is CORRECT (user guessed the concept)
       if (response.response === 'CORRECT') {
         const timeTaken = totalTimeLimit - timeRemaining;
@@ -176,10 +192,19 @@ export const ParticipantGame: React.FC = () => {
         navigate('/results');
         return;
       }
+
+      // Re-focus input field after submission
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 150);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       }
+      // Re-focus even on error
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 150);
     } finally {
       setIsAsking(false);
     }
@@ -247,7 +272,7 @@ export const ParticipantGame: React.FC = () => {
             <h3>Participants ({currentLobby.users.filter(u => u.role === 'participant').length})</h3>
             <div className="participants-list-game">
               {currentLobby.users.filter(u => u.role === 'participant').map((user) => {
-                const questionCount = currentLobby.questions.filter(q => q.userId === user.id).length;
+                // const questionCount = currentLobby.questions.filter(q => q.userId === user.id).length;
                 const isCurrentUser = user.id === currentUser?.id;
                 return (
                   <div key={user.id} className={`participant-item ${isCurrentUser ? 'current-user' : ''}`}>
@@ -259,7 +284,6 @@ export const ParticipantGame: React.FC = () => {
                         {user.name}
                         {isCurrentUser && <span className="you-badge">You</span>}
                       </div>
-                      <div className="participant-question-count">{questionCount} questions</div>
                     </div>
                   </div>
                 );
@@ -269,7 +293,7 @@ export const ParticipantGame: React.FC = () => {
 
           {/* Conversation Panel */}
           <div className="conversation-panel-participant">
-            <div className="conversation-log-participant">
+            <div className="conversation-log-participant" ref={conversationLogRef}>
               {myQuestions.length === 0 ? (
                 <div className="empty-conversation-participant">
                   <p>Start asking Jimmy yes/no questions to discover the secret concept!</p>
@@ -310,6 +334,7 @@ export const ParticipantGame: React.FC = () => {
               {error && <div className="error-message" style={{ color: 'red', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{error}</div>}
               <img src="/narwal_icon.png" alt="Jimmy" className="narwhal-icon-chat" />
               <input
+                ref={inputRef}
                 type="text"
                 value={questionText}
                 onChange={(e) => setQuestionText(e.target.value)}

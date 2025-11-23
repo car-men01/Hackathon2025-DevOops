@@ -8,9 +8,14 @@ from app.schemas.lobby import (
     LobbyCreateResponse,
     ParticipantJoin,
     ParticipantJoinResponse,
+    ParticipantLeave,
+    ParticipantLeaveResponse,
     LobbyStart,
     LobbyStartResponse,
+    LobbyDelete,
     LobbyInfo,
+    QuestionInfo,
+    ParticipantDetail,
     UserReconnect,
     UserReconnectResponse,
     LobbyDeleteResponse,
@@ -121,6 +126,35 @@ async def join_lobby(join_data: ParticipantJoin):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/lobby/leave", response_model=ParticipantLeaveResponse)
+async def leave_lobby(leave_data: ParticipantLeave):
+    """
+    Leave a lobby.
+    
+    Participants provide the 7-digit PIN and their user_id to leave the lobby.
+    """
+    try:
+        lobby = game_master.get_lobby(leave_data.pin)
+        
+        if not lobby:
+            raise HTTPException(status_code=404, detail="Lobby not found with that PIN")
+        
+        # Remove participant using Lobby method
+        lobby.remove_participant(leave_data.user_id)
+        
+        logger.info(f"Participant {leave_data.user_id} left lobby {leave_data.pin}")
+        
+        return ParticipantLeaveResponse(
+            pin=lobby.pin,
+            message="Successfully left the lobby"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error leaving lobby: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/lobby/start", response_model=LobbyStartResponse)
 async def start_lobby(lobby_start: LobbyStart):
     """
@@ -198,24 +232,30 @@ async def start_lobby(lobby_start: LobbyStart):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/lobby/{pin}", response_model=LobbyDeleteResponse)
-async def delete_lobby(pin: str):
+@router.post("/lobby/delete", response_model=LobbyDeleteResponse)
+async def delete_lobby(delete_data: LobbyDelete):
     """
     Delete a lobby and all its data (users and questions).
+    Only the host can delete the lobby.
     """
     try:
-        lobby = game_master.get_lobby(pin)
+        lobby = game_master.get_lobby(delete_data.pin)
         
         if not lobby:
             raise HTTPException(status_code=404, detail="Lobby not found with that PIN")
         
-        # Delete the lobby from game_master
-        del game_master.lobbies[pin]
+        # Verify host_id
+        if lobby.host.user_id != delete_data.host_id:
+            logger.error(f"[DELETE_LOBBY] Host ID mismatch: expected={lobby.host.user_id}, received={delete_data.host_id}")
+            raise HTTPException(status_code=403, detail="Only the host can delete the lobby")
         
-        logger.info(f"Lobby deleted {pin}")
+        # Delete the lobby from game_master
+        del game_master.lobbies[delete_data.pin]
+        
+        logger.info(f"Lobby deleted {delete_data.pin}")
         
         return LobbyDeleteResponse(
-            pin=pin,
+            pin=delete_data.pin,
             message="Lobby and all associated data deleted successfully"
         )
     except HTTPException:
@@ -246,6 +286,39 @@ async def get_lobby_info(pin: str, user_id: str):
         
         logger.info(f"[GET_LOBBY_INFO] Lobby topic: {lobby.topic}")
         
+        questions = []
+        participants_details = []
+        if is_host:
+            # Collect participants details
+            participants_details = [
+                ParticipantDetail(user_id=p.user_id, name=p.name)
+                for p in lobby.participants.values()
+            ]
+
+            # Collect questions from all participants
+            for participant in lobby.participants.values():
+                for q in participant.get_all_questions():
+                    questions.append(QuestionInfo(
+                        question_id=q.question_id,
+                        user_id=participant.user_id,
+                        user_name=participant.name,
+                        question=q.message,
+                        answer=q.answer,
+                        timestamp=q.timestamp.timestamp() * 1000
+                    ))
+            # Also check host questions if any
+            for q in lobby.host.get_all_questions():
+                 questions.append(QuestionInfo(
+                        question_id=q.question_id,
+                        user_id=lobby.host.user_id,
+                        user_name=lobby.host.name,
+                        question=q.message,
+                        answer=q.answer,
+                        timestamp=q.timestamp.timestamp() * 1000
+                    ))
+            
+            questions.sort(key=lambda x: x.timestamp)
+
         response = LobbyInfo(
             pin=lobby.pin,
             host_name=lobby.host.name,
@@ -255,7 +328,8 @@ async def get_lobby_info(pin: str, user_id: str):
             start_time=lobby.start_time.isoformat() if lobby.start_time else None,
             secret_concept=lobby.secret_concept if is_host else None,
             context=lobby.context if is_host else None,
-            lobby_active=lobby.start_time is not None
+            questions=questions if is_host else None,
+            participants_details=participants_details if is_host else None
         )
         logger.info(f"[GET_LOBBY_INFO] Returning response with topic: {response.topic}")
         logger.info(f"[GET_LOBBY_INFO] Full response: {response}")

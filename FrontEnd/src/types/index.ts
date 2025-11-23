@@ -88,6 +88,20 @@ export interface StartLobbyResponse {
   participants: string[];
 }
 
+export interface QuestionInfo {
+  question_id: string;
+  user_id: string;
+  user_name: string;
+  question: string;
+  answer: string;
+  timestamp: number;
+}
+
+export interface ParticipantDetail {
+  user_id: string;
+  name: string;
+}
+
 export interface LobbyInfoResponse {
   pin: string;
   host_name: string;
@@ -97,6 +111,8 @@ export interface LobbyInfoResponse {
   start_time?: string;
   timelimit: number;
   topic: string;
+  questions?: QuestionInfo[];
+  participants_details?: ParticipantDetail[];
 }
 
 export interface AskQuestionRequest {

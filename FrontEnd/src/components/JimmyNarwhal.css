@@ -15,27 +15,27 @@
 
 /* Idle animation - gentle floating */
 .jimmy-idle .jimmy-image {
-  animation: float 3s ease-in-out infinite;
+  animation: float 2s ease-in-out infinite;
 }
 
 /* Waiting animation - leaning forward */
 .jimmy-waiting .jimmy-image {
-  animation: lean-forward 2s ease-in-out infinite;
+  animation: lean-forward 1.5s ease-in-out infinite;
 }
 
 /* Processing animation - spinning */
 .jimmy-processing .jimmy-image {
-  animation: spin 1.5s linear infinite;
+  animation: spin 1s linear infinite;
 }
 
 /* Correct answer - jumping with bubbles */
 .jimmy-correct .jimmy-image {
-  animation: jump 0.6s ease-in-out;
+  animation: jump 0.5s ease-in-out;
 }
 
 /* Incorrect answer - sad wiggle */
 .jimmy-incorrect .jimmy-image {
-  animation: wiggle 0.5s ease-in-out;
+  animation: wiggle 0.4s ease-in-out;
 }
 
 .jimmy-text {

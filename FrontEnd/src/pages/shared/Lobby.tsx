@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'; // Added useEffect
 import { useNavigate, useSearchParams } from 'react-router-dom'; // Added useSearchParams
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../hooks/useGame';
 import type { UserRole, User, LobbyType } from '../../types';
 import { gameService } from '../../services/gameService';
 import { JimmyNarwhal } from '../../components/JimmyNarwhal';
+import { INPUT_LIMITS } from '../../constants/settings';
 import './Lobby.css';
 
 export const Lobby: React.FC = () => {
@@ -185,9 +186,9 @@ export const Lobby: React.FC = () => {
           
           <input
             type="text"
-            placeholder="Enter your name"
+            placeholder={`Enter your name (max ${INPUT_LIMITS.NAME} chars)`}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value.slice(0, INPUT_LIMITS.NAME))}
             className="lobby-input"
             disabled={isLoading}
             // Optional: Auto-focus on name if QR code was used
@@ -197,11 +198,11 @@ export const Lobby: React.FC = () => {
           {isJoining && (
             <input
               type="text"
-              placeholder="Enter lobby code"
+              placeholder={`Enter lobby code (max ${INPUT_LIMITS.LOBBY_CODE} chars)`}
               value={lobbyCode}
-              onChange={(e) => setLobbyCode(e.target.value.toUpperCase())}
+              onChange={(e) => setLobbyCode(e.target.value.toUpperCase().slice(0, INPUT_LIMITS.LOBBY_CODE))}
               className="lobby-input"
-              maxLength={7}
+              maxLength={INPUT_LIMITS.LOBBY_CODE}
               disabled={isLoading}
               // If coming from QR code, we might want to make this read-only or just visually filled
             />

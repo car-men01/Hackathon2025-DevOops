@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { GameState, User, LobbyType, Question } from '../types';
 
@@ -11,7 +11,7 @@ interface GameContextType extends GameState {
   makeGuess: (guess: string) => boolean;
 }
 
-const GameContext = createContext<GameContextType | undefined>(undefined);
+export const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [gameState, setGameState] = useState<GameState>({
@@ -88,12 +88,5 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-export const useGame = () => {
-  const context = useContext(GameContext);
-  if (!context) {
-    throw new Error('useGame must be used within GameProvider');
-  }
-  return context;
-};
 
 
