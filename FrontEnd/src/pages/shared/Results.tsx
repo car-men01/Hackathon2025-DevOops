@@ -4,12 +4,14 @@ import { useGame } from '../../context/GameContext';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { gameService } from '../../services/gameService';
 import { GameReportPdf } from './GameReportPdf';
+import type { LeaderboardEntry } from '../../types';
 import './Results.css';
 
 export const Results: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, currentLobby, setCurrentUser, setCurrentLobby } = useGame();
   const [narwhalFrame, setNarwhalFrame] = useState(0);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
 
   // State for the official API data for the PDF
   const [pdfData, setPdfData] = useState<any[]>([]); 
@@ -93,6 +95,24 @@ export const Results: React.FC = () => {
     return () => clearInterval(frameTimer);
   }, [narwhalFrames.length]);
 
+  useEffect(() => {
+    if (!currentLobby?.code) return;
+
+    const fetchLeaderboard = async () => {
+      try {
+        const response = await gameService.getLeaderboard(currentLobby.code);
+        setLeaderboardData(response.leaderboard);
+      } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+      }
+    };
+
+    fetchLeaderboard(); // Initial fetch
+    const interval = setInterval(fetchLeaderboard, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [currentLobby?.code]);
+
   if (!currentUser || !currentLobby) {
     navigate('/');
     return null;
@@ -106,8 +126,21 @@ export const Results: React.FC = () => {
     const studentQuestions = currentLobby.questions.filter(q => q.userId === student.id);
     const questionsUsed = studentQuestions.length;
     const timeElapsed = student.timeElapsed || 0;
-    return { ...student, questionsUsed, timeElapsed };
+
+    // Find backend data for this student
+    // Match by name because IDs for other participants are generated locally and won't match backend UUIDs
+    const backendData = leaderboardData.find(l => l.name === student.name);
+    const guessedCorrect = backendData ? backendData.guessed_correct : false;
+    // Use backend question count if available, otherwise local
+    const finalQuestionsUsed = backendData ? backendData.question_count : questionsUsed;
+
+    return { ...student, questionsUsed: finalQuestionsUsed, timeElapsed, guessedCorrect };
   }).sort((a, b) => {
+    // Prioritize those who guessed correctly
+    if (a.guessedCorrect && !b.guessedCorrect) return -1;
+    if (!a.guessedCorrect && b.guessedCorrect) return 1;
+
+    // Sort by questions first (fewer is better), then by time (less is better)
     if (a.questionsUsed !== b.questionsUsed) {
       return a.questionsUsed - b.questionsUsed;
     }
@@ -176,7 +209,7 @@ export const Results: React.FC = () => {
                   <span className="col-time">Time</span>
                 </div>
                 {studentScores.map((student, index) => (
-                  <div key={student.id} className={`results-table-row ${index === 0 ? 'winner-row' : ''}`}>
+                  <div key={student.id} className={`results-table-row ${index === 0 ? 'winner-row' : ''} ${student.guessedCorrect ? 'guessed-correct' : ''}`}>
                     <span className="col-rank">
                       {index === 0 && '🥇'}
                       {index === 1 && '🥈'}
@@ -250,7 +283,7 @@ export const Results: React.FC = () => {
                 {studentScores.slice(0, 5).map((student, index) => (
                   <div 
                     key={student.id} 
-                    className={`leaderboard-item ${student.id === currentUser.id ? 'current-user' : ''}`}
+                    className={`leaderboard-item ${student.id === currentUser.id ? 'current-user' : ''} ${student.guessedCorrect ? 'guessed-correct' : ''}`}
                   >
                     <span className="leaderboard-rank">
                       {index === 0 && '🥇'}

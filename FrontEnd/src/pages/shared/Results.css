@@ -321,6 +321,11 @@
   box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
 }
 
+.leaderboard-item.guessed-correct {
+  background-color: #d4edda !important;
+  border-left: 5px solid #28a745;
+}
+
 .leaderboard-rank {
   font-size: 24px;
   width: 40px;
@@ -425,6 +430,16 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.guessed-correct {
+  background-color: #d4edda !important; /* Light green */
+  border-left: 5px solid #28a745;
+}
+
+.guessed-correct {
+  background-color: #d4edda !important; /* Light green */
+  border-left: 5px solid #28a745;
 }
 
 
