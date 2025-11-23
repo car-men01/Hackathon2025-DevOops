@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Added useEffect
 import { useNavigate, useSearchParams } from 'react-router-dom'; // Added useSearchParams
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../hooks/useGame';
 import type { UserRole, User, LobbyType } from '../../types';
 import { gameService } from '../../services/gameService';
 import { JimmyNarwhal } from '../../components/JimmyNarwhal';

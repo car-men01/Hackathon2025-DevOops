@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../hooks/useGame';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { GameReportPdf } from './GameReportPdf'; // Import the file created above
 import './Results.css';

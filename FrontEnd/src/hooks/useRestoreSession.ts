@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
+import { useGame } from './useGame';
 import { gameService } from '../services';
 import type { User, LobbyType, UserRole } from '../types';
 

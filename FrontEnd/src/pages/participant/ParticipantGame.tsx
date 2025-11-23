@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../hooks/useGame';
 import type { Question } from '../../types';
 import { gameService } from '../../services';
 import './ParticipantGame.css';
@@ -272,7 +272,7 @@ export const ParticipantGame: React.FC = () => {
             <h3>Participants ({currentLobby.users.filter(u => u.role === 'participant').length})</h3>
             <div className="participants-list-game">
               {currentLobby.users.filter(u => u.role === 'participant').map((user) => {
-                const questionCount = currentLobby.questions.filter(q => q.userId === user.id).length;
+                // const questionCount = currentLobby.questions.filter(q => q.userId === user.id).length;
                 const isCurrentUser = user.id === currentUser?.id;
                 return (
                   <div key={user.id} className={`participant-item ${isCurrentUser ? 'current-user' : ''}`}>
