@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../hooks/useGame';
+import type {Question} from '../../types';
 import './HostGame.css';
 
 export const HostGame: React.FC = () => {
@@ -10,6 +11,12 @@ export const HostGame: React.FC = () => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [totalTimeLimit, setTotalTimeLimit] = useState(0);
+  
+  // Keep a ref to currentLobby to use in the polling interval without stale closures
+  const currentLobbyRef = useRef(currentLobby);
+  useEffect(() => {
+    currentLobbyRef.current = currentLobby;
+  }, [currentLobby]);
 
   useEffect(() => {
     if (!currentLobby || currentLobby.status !== 'playing') {
@@ -17,17 +24,21 @@ export const HostGame: React.FC = () => {
     }
   }, [currentLobby, navigate]);
 
-  // Initial fetch of lobby info to get start time and time limit
+  // Fetch lobby info to get start time, time limit, and questions
   useEffect(() => {
-    if (!currentUser || !currentLobby) return;
+    if (!currentUser?.id || !currentLobby?.code) return;
 
-    const fetchInitialLobbyInfo = async () => {
+    const lobbyCode = currentLobby.code;
+    const userId = currentUser.id;
+    const userName = currentUser.name;
+
+    const fetchLobbyInfo = async () => {
       try {
         const { gameService } = await import('../../services/gameService');
-        const lobbyInfo = await gameService.getLobbyInfo(currentLobby.code, currentUser.id);
-        console.log('[HostGame] Initial lobby info:', lobbyInfo);
+        const lobbyInfo = await gameService.getLobbyInfo(lobbyCode, userId);
+        console.log('[HostGame] Lobby info update:', lobbyInfo);
         
-        // Set initial time limit and start time from server
+        // Set initial time limit and start time from server if not set
         if (lobbyInfo.timelimit) {
           setTotalTimeLimit(lobbyInfo.timelimit);
         }
@@ -37,27 +48,80 @@ export const HostGame: React.FC = () => {
         }
 
         // Update lobby with latest info
-        const users = gameService.convertParticipantsToUsers(
-          lobbyInfo.participants,
-          lobbyInfo.host_name,
-          currentUser.id,
-          currentUser.name,
-          true
-        );
+        let users;
+        if (lobbyInfo.participants_details) {
+          users = gameService.convertParticipantDetailsToUsers(
+            lobbyInfo.participants_details,
+            lobbyInfo.host_name,
+            userId,
+            true
+          );
+        } else {
+          users = gameService.convertParticipantsToUsers(
+            lobbyInfo.participants,
+            lobbyInfo.host_name,
+            userId,
+            userName,
+            true
+          );
+        }
 
-        updateLobby({ 
+        // Prevent flickering: if we have participants but the update shows none (only host),
+        // ignore the user update to prevent clearing the UI temporarily.
+        if (currentLobbyRef.current && currentLobbyRef.current.users.length > 1 && users.length === 1) {
+          users = currentLobbyRef.current.users;
+        }
+
+        const updates: Partial<typeof currentLobby> = {
           users,
           ...(lobbyInfo.topic && { topic: lobbyInfo.topic }),
           ...(lobbyInfo.timelimit && { timeLimit: lobbyInfo.timelimit })
-        });
+        };
+
+        let newQuestions: Question[] | undefined;
+        if (lobbyInfo.questions && lobbyInfo.questions.length > 0) {
+          newQuestions = lobbyInfo.questions.map(q => ({
+            id: q.question_id,
+            userId: q.user_id,
+            userName: q.user_name,
+            question: q.question,
+            answer: q.answer as Question['answer'],
+            timestamp: q.timestamp
+          }));
+          updates.questions = newQuestions;
+        }
+
+        // Check if we really need to update to avoid flickering
+        const currentLobbyState = currentLobbyRef.current;
+        if (currentLobbyState) {
+          const questionsChanged = newQuestions && (
+            newQuestions.length !== currentLobbyState.questions.length ||
+            newQuestions.some((q, i) => {
+              const curr = currentLobbyState.questions[i];
+              return q.id !== curr.id || q.answer !== curr.answer;
+            })
+          );
+
+          const usersChanged = JSON.stringify(updates.users) !== JSON.stringify(currentLobbyState.users);
+          const topicChanged = updates.topic && updates.topic !== currentLobbyState.topic;
+          const timeLimitChanged = updates.timeLimit && updates.timeLimit !== currentLobbyState.timeLimit;
+          
+          if (!questionsChanged && !usersChanged && !topicChanged && !timeLimitChanged) {
+            return;
+          }
+        }
+
+        updateLobby(updates);
       } catch (err) {
-        console.error('[HostGame] Error fetching initial lobby info:', err);
+        console.error('[HostGame] Error fetching lobby info:', err);
       }
     };
 
-    fetchInitialLobbyInfo();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    fetchLobbyInfo();
+    const interval = setInterval(fetchLobbyInfo, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [currentUser?.id, currentUser?.name, currentLobby?.code, updateLobby]);
 
   useEffect(() => {
     // Countdown timer based on start time
@@ -92,24 +156,24 @@ export const HostGame: React.FC = () => {
   };
 
   const getAnswerClass = (answer: string) => {
-    if (answer === 'YES') return 'answer-yes';
-    if (answer === 'NO') return 'answer-no';
-    if (answer === 'I_DONT_KNOW') return 'answer-idk';
-    if (answer === 'OUT_OF_CONTEXT') return 'answer-ooc';
+    if (answer === 'Yes') return 'answer-yes';
+    if (answer === 'No') return 'answer-no';
+    if (answer === "I don't know") return 'answer-idk';
+    if (answer === 'Off-topic' || answer === 'Invalid question') return 'answer-ooc';
+    if (answer === 'CORRECT') return 'answer-correct';
     return 'answer-na';
   };
 
   const getAnswerIcon = (answer: string) => {
-    if (answer === 'YES') return '✓';
-    if (answer === 'NO') return '✗';
-    if (answer === 'I_DONT_KNOW') return '?';
-    if (answer === 'OUT_OF_CONTEXT') return '!';
+    if (answer === 'Yes') return '✓';
+    if (answer === 'No') return '✗';
+    if (answer === "I don't know") return '?';
+    if (answer === 'Off-topic' || answer === 'Invalid question') return '!';
+    if (answer === 'CORRECT') return '🎉';
     return '?';
   };
 
   const getAnswerText = (answer: string) => {
-    if (answer === 'I_DONT_KNOW') return "I Don't Know";
-    if (answer === 'OUT_OF_CONTEXT') return 'Out of Context';
     return answer;
   };
 
@@ -123,8 +187,19 @@ export const HostGame: React.FC = () => {
     navigate('/results');
   };
 
-  const handleLeaveLobby = () => {
+  const handleLeaveLobby = async () => {
     console.log('[HostGame] 🚪 Leaving lobby...');
+    try {
+      if (currentLobby && currentUser) {
+        // Dynamically import gameService to avoid circular dependencies if any
+        const { gameService } = await import('../../services/gameService');
+        console.log('[HostGame] Deleting lobby:', currentLobby.code);
+        await gameService.deleteLobby(currentLobby.code, currentUser.id);
+        console.log('[HostGame] Lobby deleted successfully');
+      }
+    } catch (error) {
+      console.error('[HostGame] Error deleting lobby:', error);
+    }
     // Clear localStorage
     localStorage.removeItem('gameUserData');
     console.log('[HostGame] ✅ LocalStorage cleared');
@@ -144,8 +219,8 @@ export const HostGame: React.FC = () => {
                 <button onClick={handleLeaveLobby} className="end-game-button">
                   Leave Lobby
                 </button>
-                <button onClick={handleEndGame} className="end-game-button">
-                  End Game
+                <button onClick={handleEndGame} className="view-leaderboard-button">
+                  View Leaderboard
                 </button>
               </div>
             </div>

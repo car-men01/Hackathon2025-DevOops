@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../hooks/useGame';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { gameService } from '../../services/gameService';
 import { GameReportPdf } from './GameReportPdf';
@@ -158,7 +158,8 @@ export const Results: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleNewGame = () => {
+  const handleBackToMenu = () => {
+    localStorage.removeItem('gameUserData');
     setCurrentUser(null);
     setCurrentLobby(null);
     navigate('/');
@@ -178,7 +179,7 @@ export const Results: React.FC = () => {
 
       <div className="results-container">
         <div className="results-header">
-          <h1>Game Over!</h1>
+          {!isTeacher && <h1>Game Over!</h1>}
           
           <div className="narwhal-celebration">
             <img 
@@ -188,10 +189,9 @@ export const Results: React.FC = () => {
             />
           </div>
 
-          {winner && (
+          {winner && !isTeacher && (
             <div className="winner-announcement">
               <h2>🎉 {winner.name} Won! 🎉</h2>
-              <p className="winner-concept">The secret was: <strong>{currentLobby.concept}</strong></p>
             </div>
           )}
         </div>
@@ -200,7 +200,7 @@ export const Results: React.FC = () => {
           {isTeacher ? (
             /* Teacher View - All Students */
             <div className="teacher-results">
-              <h3>Final Results - All Students</h3>
+              <h3>All Students</h3>
               <div className="results-table">
                 <div className="results-table-header">
                   <span className="col-rank">Rank</span>
@@ -264,12 +264,6 @@ export const Results: React.FC = () => {
                 </div>
                 <div className="performance-details">
                   <div className="detail-item">
-                    <span className="detail-label">Time Taken</span>
-                    <span className="detail-value">
-                      {formatTime(studentScores.find(s => s.id === currentUser.id)?.timeElapsed || 0)}
-                    </span>
-                  </div>
-                  <div className="detail-item">
                     <span className="detail-label">Your Rank</span>
                     <span className="detail-value">
                       {studentScores.findIndex(s => s.id === currentUser.id) + 1} / {students.length}
@@ -303,14 +297,14 @@ export const Results: React.FC = () => {
           )}
         </div>
 
-       <div className="results-actions">
-          <button onClick={() => navigate('/')} className="primary-action-button">
-            Back to Lobby
-          </button>
-          
-          {isTeacher && (
+        <div className="results-actions">
+          {isTeacher ? (
             <>
-              {/* PDF Download Button - Shows Loading state until API data arrives */}
+              <button onClick={() => navigate('/host-game')} className="primary-action-button">
+                Back to Lobby
+              </button>
+          
+              {/* PDF Download Button */}
               {isPdfReady ? (
                 <PDFDownloadLink
                   document={
@@ -335,11 +329,11 @@ export const Results: React.FC = () => {
                    Loading Data...
                 </button>
               )}
-
-              <button onClick={handleNewGame} className="secondary-action-button">
-                New Game
-              </button>
             </>
+          ) : (
+            <button onClick={handleBackToMenu} className="primary-action-button">
+              Back to Menu
+            </button>
           )}
         </div>
       </div>

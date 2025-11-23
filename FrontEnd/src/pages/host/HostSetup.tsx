@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../hooks/useGame';
 import { gameService } from '../../services/gameService'; // Ensure path matches your export
 import { JimmyNarwhal } from '../../components/JimmyNarwhal';
 import type { LobbyType } from '../../types';
+import { INPUT_LIMITS } from '../../constants/settings';
 import './HostSetup.css';
 
 export const HostSetup: React.FC = () => {
@@ -192,7 +193,17 @@ export const HostSetup: React.FC = () => {
     }
   };
 
-  const handleLeaveLobby = () => {
+  const handleLeaveLobby = async () => {
+    console.log('[HostSetup] 🚪 Leaving lobby...');
+    try {
+      if (currentLobby && currentUser) {
+        console.log('[HostSetup] Deleting lobby:', currentLobby.code);
+        await gameService.deleteLobby(currentLobby.code, currentUser.id);
+        console.log('[HostSetup] Lobby deleted successfully');
+      }
+    } catch (error) {
+      console.error('[HostSetup] Error deleting lobby:', error);
+    }
     localStorage.removeItem('gameUserData');
     navigate('/');
   };
@@ -221,15 +232,16 @@ export const HostSetup: React.FC = () => {
         {!showLobbyView ? (
           /* Fields View */
           <div className="setup-form">
+            {error && <div className="error-message" style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
+            
             <div className="form-group">
               <label htmlFor="topic">Topic/Description *</label>
               <input
                 id="topic"
                 type="text"
-                placeholder="e.g., Biology"
-
+                placeholder={`e.g., Biology (max ${INPUT_LIMITS.TOPIC} chars)`}
                 value={topic}
-                onChange={(e) => setTopic(e.target.value)}
+                onChange={(e) => setTopic(e.target.value.slice(0, INPUT_LIMITS.TOPIC))}
                 className="setup-input"
                 disabled={isLoading}
               />
@@ -241,9 +253,9 @@ export const HostSetup: React.FC = () => {
               <input
                 id="concept"
                 type="text"
-                placeholder="e.g., Photosynthesis"
+                placeholder={`e.g., Photosynthesis (max ${INPUT_LIMITS.CONCEPT} chars)`}
                 value={concept}
-                onChange={(e) => setConcept(e.target.value)}
+                onChange={(e) => setConcept(e.target.value.slice(0, INPUT_LIMITS.CONCEPT))}
                 className="setup-input"
                 disabled={isLoading}
               />
@@ -254,9 +266,9 @@ export const HostSetup: React.FC = () => {
               <label htmlFor="context">Context/Clarification *</label>
               <textarea
                 id="context"
-                placeholder="Add clarifications or hints..."
+                placeholder={`Add clarifications or hints... (max ${INPUT_LIMITS.CONTEXT} chars)`}
                 value={context}
-                onChange={(e) => setContext(e.target.value)}
+                onChange={(e) => setContext(e.target.value.slice(0, INPUT_LIMITS.CONTEXT))}
                 className="setup-textarea"
                 rows={3}
                 disabled={isLoading}
@@ -273,7 +285,7 @@ export const HostSetup: React.FC = () => {
                 max="60"
                 placeholder="10"
                 value={timeLimit}
-                onChange={(e) => setTimeLimit(e.target.value)}
+                onChange={(e) => setTimeLimit(e.target.value.slice(0, INPUT_LIMITS.TIME_LIMIT))}
                 className="setup-input"
                 disabled={isLoading}
               />
