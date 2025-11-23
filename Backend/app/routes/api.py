@@ -414,7 +414,7 @@ async def ask_question(pin: str, question: LobbyQuestion):
 
 
 @router.get("/lobby/{pin}/leaderboard", response_model=LeaderboardResponse)
-async def get_leaderboard(pin: str, limit: int = 10):
+async def get_leaderboard(pin: str, limit: int = -1):
     """
     Get the leaderboard for a lobby.
     
