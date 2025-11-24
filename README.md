@@ -3,7 +3,6 @@
 An interactive educational game where students guess secret concepts by asking yes/no questions to Jimmy the Narwhal, powered by AI. Perfect for classroom learning, remote education, and concept exploration!
 
 ![Game Status](https://img.shields.io/badge/status-active-success)
-![License](https://img.shields.io/badge/license-MIT-blue)
 
 ## 📋 Table of Contents
 
@@ -510,13 +509,10 @@ Contributions are welcome! Please follow these steps:
 - **Commits**: Use descriptive commit messages
 - **Documentation**: Update README for significant changes
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👥 Authors
 
-- **DevOops Team** - Hackathon 2025
+- **DevOops Team** - Hermes Hackathon 2025
 
 ## 🙏 Acknowledgments
 
@@ -545,6 +541,12 @@ For issues, questions, or suggestions:
 - [ ] Advanced AI prompts
 - [ ] Team-based gameplay
 - [ ] Achievement system
+
+## 🖼️ Screen Shots 
+
+### Landing Page
+
+
 
 ---
 
